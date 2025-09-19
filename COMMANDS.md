@@ -59,21 +59,29 @@ llmctl add
 4. 确认或自定义 Provider ID
 5. 输入 Base URL
 6. 输入 API Token
-7. 选择是否立即使用该 Provider
+7. 输入模型名称 (ANTHROPIC_MODEL，仅中转时需要)
+8. 选择是否立即使用该 Provider (会自动设置环境变量)
 
 **示例对话：**
 ```
-🔧 配置 Anthropic Claude:
+🔧 配置 LLM API 配置:
 
 ? 请输入 Provider 名称: 我的Claude配置
 ? 请输入 Provider 描述 (可选): 日常开发使用
-🆔 自动生成 Provider ID: wo-de-claude-pei-zhi
-? 使用自动生成的 ID "wo-de-claude-pei-zhi"? Yes
-? 请输入 API Base URL (留空使用默认): https://api.lycheeshare.com
+🆔 使用 Provider ID: wo-de-claude-pei-zhi
+? 请输入 API URL: https://api.lycheeshare.com
 ? 请输入 API Token: [隐藏输入]
+? 请输入模型名称 (ANTHROPIC_MODEL，仅中转时需要): claude-sonnet-4-20250514
 ✅ 成功添加 Provider: 我的Claude配置
 ? 是否立即选择此 Provider 作为当前使用的 Provider? Yes
 🎯 已选择 "我的Claude配置" 作为当前 Provider
+🔄 正在自动设置环境变量...
+即将设置的环境变量:
+  ANTHROPIC_AUTH_TOKEN=********...
+  ANTHROPIC_BASE_URL=https://api.lycheeshare.com
+  ANTHROPIC_MODEL=claude-sonnet-4-20250514
+
+✅ 已自动设置 3 个环境变量
 ```
 
 #### 使用特定模板
@@ -90,10 +98,10 @@ llmctl add --list-templates
 ```
 📋 可用的 Provider 模板:
 
-1. anthropic
-   名称: Anthropic Claude
-   描述: 使用 Anthropic Claude API
-   环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL
+1. LLM API 配置
+   ID: anthropic
+   描述: 配置大语言模型 API (支持 Claude、GLM、Qwen 等)
+   环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL
 ```
 
 ### `llmctl list` / `llmctl ls` - 列出 Providers
@@ -138,12 +146,34 @@ llmctl use
 ? 请选择要使用的 Provider:
 ❯ wo-de-claude-pei-zhi (我的Claude配置) - 当前使用
   gong-zuo-yong-claude (工作用Claude)
+
+✅ 已选择 "工作用Claude" 作为当前 Provider
+🔄 正在自动设置环境变量...
+即将设置的环境变量:
+  ANTHROPIC_AUTH_TOKEN=********...
+  ANTHROPIC_BASE_URL=https://api.anthropic.com
+  ANTHROPIC_MODEL=
+
+✅ 已自动设置 2 个环境变量
 ```
 
 #### 直接指定 Provider
 ```bash
 llmctl use gong-zuo-yong-claude
 ```
+
+**输出示例：**
+```
+✅ 已选择 "工作用Claude" 作为当前 Provider
+🔄 正在自动设置环境变量...
+即将设置的环境变量:
+  ANTHROPIC_AUTH_TOKEN=********...
+  ANTHROPIC_BASE_URL=https://api.anthropic.com
+
+✅ 已自动设置 2 个环境变量
+```
+
+> **注意**: `llmctl use` 会自动设置环境变量，无需手动执行 `llmctl export`。
 
 #### 显示可选择的列表
 ```bash
@@ -195,10 +225,11 @@ llmctl update qwen
 - **配置描述** - Provider 描述信息
 - **API地址** - API 接口地址
 - **API密钥** - API 认证密钥
+- **模型名称** - ANTHROPIC_MODEL 环境变量，仅在使用中转服务时需要配置
 
 **注意事项：**
 - 修改会自动验证配置有效性
-- 如果修改的是当前使用的 Provider，建议重新导出环境变量
+- 如果修改的是当前使用的 Provider，建议使用 `llmctl use` 重新选择以自动更新环境变量
 - 所有修改都会保存到配置文件中
 
 ### `llmctl current` - 显示当前 Provider
@@ -408,10 +439,11 @@ ID: anthropic
 环境变量:
   ANTHROPIC_AUTH_TOKEN: (用户配置)
   ANTHROPIC_BASE_URL: https://api.lycheeshare.com
+  ANTHROPIC_MODEL: (可选，仅中转时需要)
 
 默认值:
   baseUrl: https://api.lycheeshare.com
-  modelName: claude-sonnet-4-20250514
+  modelName: (空值，仅中转时需要配置)
   maxTokens: 4096
   temperature: 0.7
 
@@ -423,6 +455,11 @@ ID: anthropic
   2. 请输入 API Token:
      类型: password
      必填: 是
+
+  3. 请输入模型名称 (ANTHROPIC_MODEL，仅中转时需要):
+     类型: input
+     必填: 否
+     默认值: (空值)
 ```
 
 #### 创建自定义模板
@@ -579,8 +616,8 @@ if (Get-Command llmctl -ErrorAction SilentlyContinue) {
 ```bash
 # 每日工作开始
 llmctl current                    # 确认当前 Provider
-llmctl export          # 加载环境变量
-llmctl validate                  # 验证配置
+llmctl use your-provider          # 选择 Provider (自动设置环境变量)
+llmctl validate                   # 验证配置
 
 # 启动 Claude Code
 claude-code

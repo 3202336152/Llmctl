@@ -3,6 +3,7 @@ import inquirer from 'inquirer'
 import chalk from 'chalk'
 import { configManager } from '../config.js'
 import { providerRegistry } from '../providers/index.js'
+import { EnvExporter } from '../utils/env.js'
 import type {Provider, ProviderTemplate} from '../types.js'
 
 export function createAddCommand(): Command {
@@ -53,6 +54,35 @@ export function createAddCommand(): Command {
         if (useNow) {
           configManager.setActiveProvider(provider.id)
           console.log(chalk.green(`🎯 已选择 "${provider.name}" 作为当前 Provider`))
+
+          // 自动应用环境变量
+          const envVars = providerRegistry.getProviderEnvVars(provider)
+          if (Object.keys(envVars).length > 0) {
+            console.log(chalk.blue('🔄 正在自动设置环境变量...'))
+
+            // 显示即将设置的环境变量
+            console.log(chalk.gray('即将设置的环境变量:'))
+            Object.entries(envVars).forEach(([key, value]) => {
+              const maskedValue = key.toLowerCase().includes('key') || key.toLowerCase().includes('token')
+                ? value.replace(/./g, '*').slice(0, 8) + '...'
+                : value
+              console.log(chalk.gray(`  ${key}=${maskedValue}`))
+            })
+            console.log()
+
+            try {
+              const result = await EnvExporter.autoApplyEnvironmentVariables(envVars, provider.name)
+              if (result.success) {
+                console.log(chalk.green(`✅ ${result.message}`))
+              } else {
+                console.log(chalk.yellow(`⚠️  ${result.message}`))
+                console.log(chalk.blue('💡 您可以手动执行: ') + chalk.cyan('llmctl export --format cmd > env.bat && call env.bat'))
+              }
+            } catch (error) {
+              console.log(chalk.red('❌ 自动设置环境变量失败:'), error instanceof Error ? error.message : '未知错误')
+              console.log(chalk.blue('💡 您可以手动执行: ') + chalk.cyan('llmctl export --format cmd > env.bat && call env.bat'))
+            }
+          }
         }
       } catch (error) {
         console.error(chalk.red('❌ 添加 Provider 失败:'), error instanceof Error ? error.message : '未知错误')

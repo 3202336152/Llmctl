@@ -65,38 +65,17 @@ export function createUseCommand(): Command {
           })
           console.log()
 
-          const { shouldApply } = await inquirer.prompt([
-            {
-              type: 'confirm',
-              name: 'shouldApply',
-              message: `是否自动应用 ${Object.keys(envVars).length} 个环境变量?`,
-              default: true,
-            },
-          ])
-
-          if (shouldApply) {
-            try {
-              const result = await EnvExporter.autoApplyEnvironmentVariables(envVars, selectedProvider.name)
-              if (result.success) {
-                console.log(chalk.green(`✅ ${result.message}`))
-                // 显示已设置的环境变量
-                console.log(chalk.green('已设置的环境变量:'))
-                Object.entries(envVars).forEach(([key, value]) => {
-                  const maskedValue = key.toLowerCase().includes('key') || key.toLowerCase().includes('token')
-                    ? value.replace(/./g, '*').slice(0, 8) + '...'
-                    : value
-                  console.log(chalk.green(`  ${key}=${maskedValue}`))
-                })
-              } else {
-                console.log(chalk.yellow(`⚠️  ${result.message}`))
-                console.log(chalk.blue('💡 您可以手动执行: ') + chalk.cyan('llmctl export --format cmd > env.bat && call env.bat'))
-              }
-            } catch (error) {
-              console.log(chalk.red('❌ 自动设置环境变量失败:'), error instanceof Error ? error.message : '未知错误')
+          try {
+            const result = await EnvExporter.autoApplyEnvironmentVariables(envVars, selectedProvider.name)
+            if (result.success) {
+              console.log(chalk.green(`✅ ${result.message}`))
+            } else {
+              console.log(chalk.yellow(`⚠️  ${result.message}`))
               console.log(chalk.blue('💡 您可以手动执行: ') + chalk.cyan('llmctl export --format cmd > env.bat && call env.bat'))
             }
-          } else {
-            console.log(chalk.blue('💡 使用 ') + chalk.cyan('llmctl export') + chalk.blue(' 手动导出环境变量'))
+          } catch (error) {
+            console.log(chalk.red('❌ 自动设置环境变量失败:'), error instanceof Error ? error.message : '未知错误')
+            console.log(chalk.blue('💡 您可以手动执行: ') + chalk.cyan('llmctl export --format cmd > env.bat && call env.bat'))
           }
         }
       } catch (error) {

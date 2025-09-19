@@ -36,29 +36,17 @@ llmctl add
 ### 2. 选择 Provider
 
 ```bash
-# 交互式选择
+# 交互式选择（会自动设置环境变量）
 llmctl use
 
-# 或直接指定
+# 或直接指定（会自动设置环境变量）
 llmctl use my-provider
 ```
 
-### 3. 导出环境变量
+### 3. 启动 Claude Code
 
 ```bash
-# 导出到当前 shell
-llmctl export
-
-# Windows PowerShell
-llmctl export --format powershell | Invoke-Expression
-
-# Windows CMD
-llmctl export --format cmd > env.bat && call env.bat
-```
-
-### 4. 启动 Claude Code
-
-```bash
+# 环境变量已自动设置，直接启动
 claude
 ```
 
@@ -83,9 +71,10 @@ claude
 ### 基本集成流程
 
 1. **配置 Provider**: `llmctl add`
-2. **选择 Provider**: `llmctl use my-provider`
-3. **导出环境变量**: `llmctl export`
-4. **启动 Claude Code**: `claude-code`
+2. **选择 Provider**: `llmctl use my-provider` (自动设置环境变量)
+3. **启动 Claude Code**: `claude-code`
+
+> **注意**: `llmctl use` 和 `llmctl add`（选择立即使用时）会自动设置环境变量，无需手动执行 `llmctl export`。
 
 ### 自动化脚本
 
@@ -126,14 +115,17 @@ if (Get-Command llmctl -ErrorAction SilentlyContinue) {
 
 **环境变量未生效**
 ```bash
-# 确保使用 eval 命令
-llmctl export
-
 # 检查当前 Provider
 llmctl current
 
 # 验证配置
 llmctl validate
+
+# 重新选择 Provider（会自动设置环境变量）
+llmctl use your-provider
+
+# 或手动导出环境变量
+llmctl export
 ```
 
 **命令无法找到**
