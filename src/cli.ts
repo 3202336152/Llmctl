@@ -220,8 +220,8 @@ async function main() {
     console.log('  $ llmctl export       # 在 bash 中应用环境变量')
     console.log('')
     console.log(chalk.bold('更多信息:'))
-    console.log('  文档: https://github.com/yourusername/llmctl')
-    console.log('  问题: https://github.com/yourusername/llmctl/issues')
+    console.log('  文档: https://github.com/3202336152/llmctl')
+    console.log('  问题: https://github.com/3202336152/llmctl/issues')
   })
 
   // 错误处理

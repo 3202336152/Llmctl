@@ -782,4 +782,4 @@ echo $ANTHROPIC_AUTH_TOKEN
 
 ---
 
-更多问题和建议，请访问 [GitHub Issues](https://github.com/yourusername/llmctl/issues)。
+更多问题和建议，请访问 [GitHub Issues](https://github.com/3202336152/llmctl/issues)。

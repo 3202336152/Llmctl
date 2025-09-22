@@ -141,7 +141,7 @@ which llmctl
 
 ```bash
 # 克隆项目
-git clone https://github.com/yourusername/llmctl.git
+git clone https://github.com/3202336152/llmctl.git
 cd llmctl
 
 # 安装依赖
