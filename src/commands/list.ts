@@ -32,7 +32,7 @@ export function createListCommand(): Command {
           console.log(chalk.yellow("😟 当前没有配置任何 LLM Provider"));
           console.log(
             chalk.blue("💡 使用 ") +
-              chalk.cyan("llmctl add") +
+              chalk.cyan("ctl add") +
               chalk.blue(" 添加一个新的 Provider"),
           );
           return;
@@ -84,7 +84,7 @@ export function createListCommand(): Command {
           console.log(chalk.yellow("⚠️  当前没有选择活跃的 Provider"));
           console.log(
             chalk.blue("💡 使用 ") +
-              chalk.cyan("llmctl use <provider-id>") +
+              chalk.cyan("ctl use <provider-id>") +
               chalk.blue(" 选择一个 Provider"),
           );
         }

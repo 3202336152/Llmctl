@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import inquirer from "inquirer";
 import chalk from "chalk";
 import { providerRegistry } from "../providers/index.js";
+import { prompt as askUser } from "../utils/inquirer.js";
 import type { PromptConfig, ProviderTemplate } from "../types.js";
 
 export function createTemplateCommand(): Command {
@@ -62,7 +62,7 @@ export function createTemplateCommand(): Command {
         console.error(chalk.red(`❌ 模板 "${templateId}" 不存在`));
         console.log(
           chalk.blue("💡 使用 ") +
-            chalk.cyan("llmctl template list") +
+            chalk.cyan("ctl template list") +
             chalk.blue(" 查看所有模板"),
         );
         process.exit(1);
@@ -93,14 +93,14 @@ export function createTemplateCommand(): Command {
       }
 
       console.log(`\n${chalk.cyan("配置项:")}`);
-      template.setupPrompts.forEach((prompt, index) => {
-        console.log(`  ${index + 1}. ${prompt.message}`);
-        console.log(`     类型: ${prompt.type || "input"}`);
-        if (prompt.required !== false) {
-          console.log(`     必填: ${prompt.required === true ? "是" : "否"}`);
+      template.setupPrompts.forEach((askUser, index) => {
+        console.log(`  ${index + 1}. ${askUser.message}`);
+        console.log(`     类型: ${askUser.type || "input"}`);
+        if (askUser.required !== false) {
+          console.log(`     必填: ${askUser.required === true ? "是" : "否"}`);
         }
-        if (prompt.default) {
-          console.log(`     默认值: ${prompt.default}`);
+        if (askUser.default) {
+          console.log(`     默认值: ${askUser.default}`);
         }
         console.log();
       });
@@ -156,7 +156,7 @@ providerRegistry.registerProvider(new CustomProvider())
 
 async function createCustomTemplate(): Promise<ProviderTemplate> {
   // 基本信息
-  const basicInfo = await inquirer.prompt([
+  const basicInfo = await askUser([
     {
       type: "input",
       name: "id",
@@ -199,7 +199,7 @@ async function createCustomTemplate(): Promise<ProviderTemplate> {
       envKey,
       envValue,
       continue: shouldContinue,
-    } = await inquirer.prompt([
+    } = await askUser([
       {
         type: "input",
         name: "envKey",
@@ -237,10 +237,10 @@ async function createCustomTemplate(): Promise<ProviderTemplate> {
   addMore = true;
 
   while (addMore) {
-    const prompt = await createPromptConfig();
-    setupPrompts.push(prompt);
+    const promptConfig = await createPromptConfig();
+    setupPrompts.push(promptConfig);
 
-    const { continue: shouldContinue } = await inquirer.prompt([
+    const { continue: shouldContinue } = await askUser([
       {
         type: "confirm",
         name: "continue",
@@ -262,7 +262,7 @@ async function createCustomTemplate(): Promise<ProviderTemplate> {
 }
 
 async function createPromptConfig(): Promise<PromptConfig> {
-  const promptInfo = await inquirer.prompt([
+  const promptInfo = await askUser([
     {
       type: "list",
       name: "type",
@@ -310,7 +310,7 @@ async function createPromptConfig(): Promise<PromptConfig> {
     },
   ]);
 
-  const prompt: PromptConfig = {
+  const promptConfig: PromptConfig = {
     type: promptInfo.type,
     name: promptInfo.name,
     message: promptInfo.message,
@@ -318,11 +318,11 @@ async function createPromptConfig(): Promise<PromptConfig> {
   };
 
   if (promptInfo.default) {
-    prompt.default = promptInfo.default;
+    promptConfig.default = promptInfo.default;
   }
 
   if (promptInfo.type === "password") {
-    prompt.mask = "*";
+    promptConfig.mask = "*";
   }
 
   // 如果是选择类型，添加选项
@@ -332,7 +332,7 @@ async function createPromptConfig(): Promise<PromptConfig> {
     let addMore = true;
 
     while (addMore) {
-      const { choice, continue: shouldContinue } = await inquirer.prompt([
+      const { choice, continue: shouldContinue } = await askUser([
         {
           type: "input",
           name: "choice",
@@ -356,8 +356,8 @@ async function createPromptConfig(): Promise<PromptConfig> {
       addMore = shouldContinue;
     }
 
-    prompt.choices = choices;
+    promptConfig.choices = choices;
   }
 
-  return prompt;
+  return promptConfig;
 }

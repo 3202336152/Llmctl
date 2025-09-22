@@ -34,12 +34,12 @@ export function createExportCommand(): Command {
             console.error(chalk.yellow("😟 当前没有选择活跃的 Provider"));
             console.log(
               chalk.blue("💡 使用 ") +
-                chalk.cyan("llmctl use <provider-id>") +
+                chalk.cyan("ctl use <provider-id>") +
                 chalk.blue(" 选择一个 Provider"),
             );
             console.log(
               chalk.blue("   或使用 ") +
-                chalk.cyan("llmctl export -p <provider-id>") +
+                chalk.cyan("ctl export -p <provider-id>") +
                 chalk.blue(" 指定特定的 Provider"),
             );
             process.exit(1);
@@ -136,22 +136,22 @@ export function createExportCommand(): Command {
 
             switch (format) {
               case "bash":
-                console.error(chalk.gray("# llmctl export"));
+                console.error(chalk.gray("# ctl export"));
                 console.error(
-                  chalk.gray("# 或: llmctl export | source /dev/stdin"),
+                  chalk.gray("# 或: ctl export | source /dev/stdin"),
                 );
                 break;
               case "powershell":
                 console.error(
                   chalk.gray(
-                    "# llmctl export --format powershell | Invoke-Expression",
+                    "# ctl export --format powershell | Invoke-Expression",
                   ),
                 );
                 break;
               case "cmd":
                 console.error(
                   chalk.gray(
-                    "# llmctl export --format cmd > env.bat && call env.bat",
+                    "# ctl export --format cmd > env.bat && call env.bat",
                   ),
                 );
                 break;

@@ -1,8 +1,8 @@
 import { Command } from "commander";
-import inquirer from "inquirer";
 import chalk from "chalk";
 import { configManager } from "../config.js";
 import { providerRegistry } from "../providers/index.js";
+import { prompt } from "../utils/inquirer.js";
 import type { Provider } from "../types.js";
 
 export function createEditCommand(): Command {
@@ -19,7 +19,7 @@ export function createEditCommand(): Command {
           console.log(chalk.yellow("📭 没有已配置的 Provider"));
           console.log(
             chalk.blue("💡 使用 ") +
-              chalk.cyan("llmctl add") +
+              chalk.cyan("ctl add") +
               chalk.blue(" 添加新的 Provider"),
           );
           return;
@@ -33,7 +33,7 @@ export function createEditCommand(): Command {
             console.error(chalk.red(`❌ Provider "${providerId}" 不存在`));
             console.log(
               chalk.blue("💡 使用 ") +
-                chalk.cyan("llmctl list") +
+                chalk.cyan("ctl list") +
                 chalk.blue(" 查看所有 Provider"),
             );
             process.exit(1);
@@ -61,7 +61,7 @@ export function createEditCommand(): Command {
           console.log(
             chalk.blue("💡 这是当前使用的 Provider，建议重新导出环境变量："),
           );
-          console.log(chalk.cyan("llmctl export"));
+          console.log(chalk.cyan("ctl export"));
         }
       } catch (error) {
         console.error(
@@ -74,7 +74,7 @@ export function createEditCommand(): Command {
 }
 
 async function selectProviderToEdit(providers: Provider[]): Promise<Provider> {
-  const { selectedProviderId } = await inquirer.prompt([
+  const { selectedProviderId } = await prompt([
     {
       type: "list",
       name: "selectedProviderId",
@@ -112,7 +112,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
   });
   console.log();
 
-  const { fieldsToEdit } = await inquirer.prompt([
+  const { fieldsToEdit } = await prompt([
     {
       type: "checkbox",
       name: "fieldsToEdit",
@@ -122,7 +122,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
         value: field.key,
         checked: false,
       })),
-      validate: (choices) => {
+      validate: (choices: string[]) => {
         if (choices.length === 0) {
           return "请至少选择一个要修改的字段";
         }
@@ -137,7 +137,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
     const field = editableFields.find((f) => f.key === fieldKey)!;
 
     if (fieldKey === "apiKey") {
-      const { newApiKey } = await inquirer.prompt([
+      const { newApiKey } = await prompt([
         {
           type: "password",
           name: "newApiKey",
@@ -167,7 +167,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
         };
       }
     } else if (fieldKey === "modelName") {
-      const { newModelName } = await inquirer.prompt([
+      const { newModelName } = await prompt([
         {
           type: "input",
           name: "newModelName",
@@ -195,7 +195,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
         updates.envVars = updatedEnvVars;
       }
     } else {
-      const { newValue } = await inquirer.prompt([
+      const { newValue } = await prompt([
         {
           type: "input",
           name: "newValue",

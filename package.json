@@ -17,7 +17,7 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "llmctl": "./dist/cli.js"
+    "ctl": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -44,7 +44,7 @@
     "commander": "^12.1.0",
     "conf": "^13.0.1",
     "cross-spawn": "^7.0.3",
-    "inquirer": "^10.2.2",
+    "inquirer": "^8.2.7",
     "ora": "^8.1.0",
     "zod": "^3.23.8"
   },

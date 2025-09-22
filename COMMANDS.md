@@ -1,6 +1,6 @@
-# llmctl 命令操作指南
+# ctl 命令操作指南
 
-本指南详细介绍 llmctl 工具的所有命令和使用方法。
+本指南详细介绍 ctl 工具的所有命令和使用方法。
 
 ## 📖 目录
 
@@ -10,46 +10,47 @@
 - [配置验证](#配置验证)
 - [模板管理](#模板管理)
 - [高级使用](#高级使用)
+  - [开发和调试](#开发和调试)
 - [最佳实践](#最佳实践)
 - [故障排除](#故障排除)
 
 ## 基础命令
 
-### `llmctl` (无参数)
+### `ctl` (无参数)
 首次运行时启动引导向导，帮助您配置第一个 Provider。
 
 ```bash
-llmctl
+ctl
 ```
 
 **输出示例：**
 ```
-🎉 欢迎使用 llmctl！
+🎉 欢迎使用 ctl！
 🔍 检测到您还没有配置任何 LLM Provider
 🚀 让我们开始配置您的第一个 Provider...
 ```
 
-### `llmctl --help` / `llmctl -h`
+### `ctl --help` / `ctl -h`
 显示帮助信息和所有可用命令。
 
 ```bash
-llmctl --help
+ctl --help
 ```
 
-### `llmctl --version` / `llmctl -V`
+### `ctl --version` / `ctl -V`
 显示当前版本信息。
 
 ```bash
-llmctl --version
+ctl --version
 ```
 
 ## Provider 管理
 
-### `llmctl add` - 添加 Provider
+### `ctl add` - 添加 Provider
 
 #### 交互式添加 (推荐)
 ```bash
-llmctl add
+ctl add
 ```
 
 **交互流程：**
@@ -86,12 +87,12 @@ llmctl add
 
 #### 使用特定模板
 ```bash
-llmctl add --template anthropic
+ctl add --template anthropic
 ```
 
 #### 查看可用模板
 ```bash
-llmctl add --list-templates
+ctl add --list-templates
 ```
 
 **输出示例：**
@@ -104,11 +105,11 @@ llmctl add --list-templates
    环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL
 ```
 
-### `llmctl list` / `llmctl ls` - 列出 Providers
+### `ctl list` / `ctl ls` - 列出 Providers
 
 #### 基本列表
 ```bash
-llmctl list
+ctl list
 ```
 
 **输出示例：**
@@ -126,19 +127,19 @@ llmctl list
 
 #### 详细信息
 ```bash
-llmctl list --verbose
+ctl list --verbose
 ```
 
 #### JSON 格式输出
 ```bash
-llmctl list --json
+ctl list --json
 ```
 
-### `llmctl use` - 选择 Provider
+### `ctl use` - 选择 Provider
 
 #### 交互式选择
 ```bash
-llmctl use
+ctl use
 ```
 
 **交互示例：**
@@ -159,7 +160,7 @@ llmctl use
 
 #### 直接指定 Provider
 ```bash
-llmctl use gong-zuo-yong-claude
+ctl use gong-zuo-yong-claude
 ```
 
 **输出示例：**
@@ -173,18 +174,18 @@ llmctl use gong-zuo-yong-claude
 ✅ 已自动设置 2 个环境变量
 ```
 
-> **注意**: `llmctl use` 会自动设置环境变量，无需手动执行 `llmctl export`。
+> **注意**: `ctl use` 会自动设置环境变量，无需手动执行 `ctl export`。
 
 #### 显示可选择的列表
 ```bash
-llmctl use --list
+ctl use --list
 ```
 
-### `llmctl edit` / `llmctl update` - 修改 Provider 配置
+### `ctl edit` / `ctl update` - 修改 Provider 配置
 
 #### 交互式修改
 ```bash
-llmctl edit
+ctl edit
 ```
 
 **交互示例：**
@@ -211,13 +212,13 @@ llmctl edit
 ? 请输入新的 API密钥: [隐藏输入]
 ✅ 成功修改 Provider: GLM-4.5
 💡 这是当前使用的 Provider，建议重新导出环境变量：
-llmctl export
+ctl export
 ```
 
 #### 直接修改指定 Provider
 ```bash
-llmctl edit glm
-llmctl update qwen
+ctl edit glm
+ctl update qwen
 ```
 
 #### 支持修改的字段
@@ -229,14 +230,14 @@ llmctl update qwen
 
 **注意事项：**
 - 修改会自动验证配置有效性
-- 如果修改的是当前使用的 Provider，建议使用 `llmctl use` 重新选择以自动更新环境变量
+- 如果修改的是当前使用的 Provider，建议使用 `ctl use` 重新选择以自动更新环境变量
 - 所有修改都会保存到配置文件中
 
-### `llmctl current` - 显示当前 Provider
+### `ctl current` - 显示当前 Provider
 
 #### 基本信息
 ```bash
-llmctl current
+ctl current
 ```
 
 **输出示例：**
@@ -252,19 +253,19 @@ Base URL: https://api.lycheeshare.com
 
 #### 详细信息
 ```bash
-llmctl current --verbose
+ctl current --verbose
 ```
 
 #### JSON 格式
 ```bash
-llmctl current --json
+ctl current --json
 ```
 
-### `llmctl remove` / `llmctl rm` - 删除 Provider
+### `ctl remove` / `ctl rm` - 删除 Provider
 
 #### 交互式删除
 ```bash
-llmctl remove
+ctl remove
 ```
 
 **交互示例：**
@@ -280,31 +281,31 @@ llmctl remove
 
 #### 直接删除指定 Provider
 ```bash
-llmctl remove gong-zuo-yong-claude
+ctl remove gong-zuo-yong-claude
 ```
 
 #### 强制删除 (无确认提示)
 ```bash
-llmctl remove gong-zuo-yong-claude --force
+ctl remove gong-zuo-yong-claude --force
 ```
 
 #### 删除所有 Providers (危险操作)
 ```bash
-llmctl remove --all
+ctl remove --all
 ```
 
 ## 环境变量导出
 
-### `llmctl export` - 导出环境变量
+### `ctl export` - 导出环境变量
 
 #### 自动检测格式并导出
 ```bash
-llmctl export
+ctl export
 ```
 
 #### 预览导出内容 (不实际设置)
 ```bash
-llmctl export --dry-run
+ctl export --dry-run
 ```
 
 **输出示例：**
@@ -314,54 +315,54 @@ llmctl export --dry-run
 ANTHROPIC_AUTH_TOKEN=sk-lycheeshare-...
 ANTHROPIC_BASE_URL=https://api.lycheeshare.com
 
-📝 在 bash/zsh 中使用: llmctl export
-📝 在 PowerShell 中使用: llmctl export --format powershell | Invoke-Expression
-📝 在 CMD 中使用: llmctl export --format cmd > env.bat && call env.bat
+📝 在 bash/zsh 中使用: ctl export
+📝 在 PowerShell 中使用: ctl export --format powershell | Invoke-Expression
+📝 在 CMD 中使用: ctl export --format cmd > env.bat && call env.bat
 ```
 
 #### 指定格式导出
 
 **Bash/Zsh 格式:**
 ```bash
-llmctl export --format bash
+ctl export --format bash
 ```
 
 **PowerShell 格式:**
 ```bash
-llmctl export --format powershell
+ctl export --format powershell
 # 使用方式：
-llmctl export --format powershell | Invoke-Expression
+ctl export --format powershell | Invoke-Expression
 ```
 
 **Windows CMD 格式:**
 ```bash
-llmctl export --format cmd
+ctl export --format cmd
 # 使用方式：
-llmctl export --format cmd > env.bat && call env.bat
+ctl export --format cmd > env.bat && call env.bat
 ```
 
 **JSON 格式:**
 ```bash
-llmctl export --format json
+ctl export --format json
 ```
 
 #### 导出指定 Provider 的环境变量
 ```bash
-llmctl export --provider gong-zuo-yong-claude
+ctl export --provider gong-zuo-yong-claude
 ```
 
 #### 验证导出的环境变量
 ```bash
-llmctl export --validate
+ctl export --validate
 ```
 
 ## 配置验证
 
-### `llmctl validate` - 验证配置
+### `ctl validate` - 验证配置
 
 #### 验证当前配置和活跃 Provider
 ```bash
-llmctl validate
+ctl validate
 ```
 
 **输出示例：**
@@ -379,32 +380,32 @@ llmctl validate
 
 #### 仅验证配置文件
 ```bash
-llmctl validate --config
+ctl validate --config
 ```
 
 #### 验证指定 Provider
 ```bash
-llmctl validate --provider wo-de-claude-pei-zhi
+ctl validate --provider wo-de-claude-pei-zhi
 ```
 
 #### 验证所有 Providers
 ```bash
-llmctl validate --all
+ctl validate --all
 ```
 
 #### JSON 格式输出
 ```bash
-llmctl validate --json
+ctl validate --json
 ```
 
 ## 模板管理
 
-### `llmctl template` / `llmctl templates` - 管理 Provider 模板
+### `ctl template` / `ctl templates` - 管理 Provider 模板
 
 #### 列出所有模板
 ```bash
-llmctl template list
-llmctl templates ls
+ctl template list
+ctl templates ls
 ```
 
 **输出示例：**
@@ -419,13 +420,13 @@ llmctl templates ls
 
 #### JSON 格式输出
 ```bash
-llmctl template list --json
+ctl template list --json
 ```
 
 #### 查看模板详情
 ```bash
-llmctl template show anthropic
-llmctl template info anthropic
+ctl template show anthropic
+ctl template info anthropic
 ```
 
 **输出示例：**
@@ -464,8 +465,8 @@ ID: anthropic
 
 #### 创建自定义模板
 ```bash
-llmctl template create
-llmctl template new
+ctl template create
+ctl template new
 ```
 
 **创建流程：**
@@ -507,9 +508,59 @@ llmctl template new
 
 ## 高级使用
 
+### 开发和调试
+
+#### TypeScript 编译检查
+```bash
+# 检查 TypeScript 编译错误
+npx tsc --noEmit
+
+# 检查特定文件
+npx tsc --noEmit src/utils/env.ts
+
+# 检查并生成类型声明文件
+npx tsc
+```
+
+#### 代码质量检查
+```bash
+# ESLint 检查
+npm run lint
+
+# ESLint 自动修复
+npm run lint:fix
+
+# Prettier 格式化
+npm run format
+
+# 类型检查
+npm run typecheck
+```
+
+#### 测试相关
+```bash
+# 运行测试
+npm test
+
+# 运行测试并显示覆盖率
+npm run test:coverage
+
+# 监听模式运行测试
+npm run test:run
+```
+
+#### 构建项目
+```bash
+# 构建项目
+npm run build
+
+# 开发模式构建（监听文件变化）
+npm run dev
+```
+
 ### 查看配置文件路径
 ```bash
-llmctl --config-path
+ctl --config-path
 ```
 
 ### 批量操作示例
@@ -517,28 +568,28 @@ llmctl --config-path
 #### 添加多个 Providers
 ```bash
 # 添加开发环境 Provider
-llmctl add --template anthropic
+ctl add --template anthropic
 # 在交互中设置名称为 "开发环境Claude"
 
 # 添加生产环境 Provider
-llmctl add --template anthropic
+ctl add --template anthropic
 # 在交互中设置名称为 "生产环境Claude"
 ```
 
 #### 快速切换环境
 ```bash
 # 切换到开发环境
-llmctl use kai-fa-huan-jing-claude
-llmctl export
+ctl use kai-fa-huan-jing-claude
+ctl export
 
 # 切换到生产环境
-llmctl use sheng-chan-huan-jing-claude
-llmctl export
+ctl use sheng-chan-huan-jing-claude
+ctl export
 ```
 
 ### 项目级配置
 
-在项目根目录创建 `.llmctlrc` 文件：
+在项目根目录创建 `.ctlrc` 文件：
 
 ```json
 {
@@ -550,8 +601,8 @@ llmctl export
 然后在项目目录中运行：
 
 ```bash
-llmctl use $(cat .llmctlrc | jq -r .provider)
-llmctl export
+ctl use $(cat .ctlrc | jq -r .provider)
+ctl export
 ```
 
 ### 环境变量持久化
@@ -560,21 +611,21 @@ llmctl export
 
 **Bash/Zsh** (`~/.bashrc` 或 `~/.zshrc`):
 ```bash
-# llmctl 自动加载
-if command -v llmctl >/dev/null 2>&1; then
-  if llmctl current --json 2>/dev/null | jq -e '.activeProvider' >/dev/null; then
-    eval "$(llmctl export 2>/dev/null)"
+# ctl 自动加载
+if command -v ctl >/dev/null 2>&1; then
+  if ctl current --json 2>/dev/null | jq -e '.activeProvider' >/dev/null; then
+    eval "$(ctl export 2>/dev/null)"
   fi
 fi
 ```
 
 **PowerShell** (配置文件):
 ```powershell
-# llmctl 自动加载
-if (Get-Command llmctl -ErrorAction SilentlyContinue) {
-    $currentProvider = llmctl current --json 2>$null | ConvertFrom-Json
+# ctl 自动加载
+if (Get-Command ctl -ErrorAction SilentlyContinue) {
+    $currentProvider = ctl current --json 2>$null | ConvertFrom-Json
     if ($currentProvider.activeProvider) {
-        llmctl export --format powershell | Invoke-Expression
+        ctl export --format powershell | Invoke-Expression
     }
 }
 ```
@@ -589,25 +640,25 @@ if (Get-Command llmctl -ErrorAction SilentlyContinue) {
 ### 2. 安全考虑
 - 定期更新 API Token
 - 不要在脚本中硬编码 Token
-- 使用 `llmctl validate` 检查配置
+- 使用 `ctl validate` 检查配置
 
 ### 3. Provider 管理
 - **定期维护**: 删除不再使用的 Provider
-- **配置更新**: 使用 `llmctl edit` 而不是手动编辑配置文件
+- **配置更新**: 使用 `ctl edit` 而不是手动编辑配置文件
 - **备份配置**: 重要配置修改前先导出备份
   ```bash
   # 备份当前配置
-  llmctl list --json > providers-backup.json
+  ctl list --json > providers-backup.json
 
   # 修改配置
-  llmctl edit my-provider
+  ctl edit my-provider
   ```
 
 ### 4. 模板使用
 - **查看现有模板**: 添加 Provider 前先查看可用模板
   ```bash
-  llmctl template list
-  llmctl template show anthropic
+  ctl template list
+  ctl template show anthropic
   ```
 - **自定义模板**: 为团队常用的 LLM 提供商创建统一模板
 - **模板命名**: 使用清晰的模板 ID 和描述
@@ -615,9 +666,9 @@ if (Get-Command llmctl -ErrorAction SilentlyContinue) {
 ### 5. 工作流建议
 ```bash
 # 每日工作开始
-llmctl current                    # 确认当前 Provider
-llmctl use your-provider          # 选择 Provider (自动设置环境变量)
-llmctl validate                   # 验证配置
+ctl current                    # 确认当前 Provider
+ctl use your-provider          # 选择 Provider (自动设置环境变量)
+ctl validate                   # 验证配置
 
 # 启动 Claude Code
 claude-code
@@ -635,20 +686,20 @@ claude-code
 #### 1. 命令无法找到
 ```bash
 # 检查安装
-npm list -g llmctl
+npm list -g ctl
 
 # 重新安装
-npm install -g llmctl
+npm install -g ctl
 
 # 检查 PATH
 echo $PATH
-which llmctl
+which ctl
 ```
 
 #### 2. 环境变量未生效
 ```bash
 # 确保使用 eval
-llmctl export
+ctl export
 
 # 检查当前 shell
 echo $SHELL
@@ -660,17 +711,17 @@ echo $ANTHROPIC_AUTH_TOKEN
 #### 3. Provider 验证失败
 ```bash
 # 查看详细错误
-llmctl validate --provider your-provider --verbose
+ctl validate --provider your-provider --verbose
 
 # 重新配置
-llmctl remove your-provider
-llmctl add
+ctl remove your-provider
+ctl add
 ```
 
 #### 4. API 连接问题
 ```bash
 # 验证配置
-llmctl validate
+ctl validate
 
 # 测试 API 连接
 curl -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
@@ -682,25 +733,25 @@ curl -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
 #### 5. Provider 修改问题
 ```bash
 # 查看当前配置
-llmctl current --verbose
+ctl current --verbose
 
 # 修改配置
-llmctl edit provider-id
+ctl edit provider-id
 
 # 验证修改结果
-llmctl validate --provider provider-id
+ctl validate --provider provider-id
 
 # 如果修改失败，检查输入格式
-llmctl template show anthropic  # 查看字段要求
+ctl template show anthropic  # 查看字段要求
 ```
 
 #### 6. 模板相关问题
 ```bash
 # 查看可用模板
-llmctl template list
+ctl template list
 
 # 查看模板详情
-llmctl template show template-id
+ctl template show template-id
 
 # 创建模板时遇到问题
 # 确保模板 ID 只包含: a-z, 0-9, -, _
@@ -711,19 +762,19 @@ llmctl template show template-id
 
 #### 启用详细输出
 ```bash
-DEBUG=llmctl:* llmctl command
+DEBUG=ctl:* ctl command
 ```
 
 #### 查看配置文件
 ```bash
 # 查看配置路径
-llmctl --config-path
+ctl --config-path
 
 # 查看配置内容
-cat "$(llmctl --config-path)"
+cat "$(ctl --config-path)"
 
-# 或使用 llmctl 查看
-llmctl list --json
+# 或使用 ctl 查看
+ctl list --json
 ```
 
 ### 重置配置
@@ -731,22 +782,22 @@ llmctl list --json
 #### 完全重置
 ```bash
 # 删除所有 Providers
-llmctl remove --all
+ctl remove --all
 
 # 重新开始配置
-llmctl
+ctl
 ```
 
 #### 修复损坏的配置
 ```bash
 # 备份当前配置
-cp "$(llmctl --config-path)" "$(llmctl --config-path).backup"
+cp "$(ctl --config-path)" "$(ctl --config-path).backup"
 
 # 删除配置文件
-rm "$(llmctl --config-path)"
+rm "$(ctl --config-path)"
 
 # 重新初始化
-llmctl
+ctl
 ```
 
 ## 平台特定说明
@@ -755,14 +806,14 @@ llmctl
 
 #### CMD 中使用
 ```cmd
-llmctl export --format cmd > env.bat
+ctl export --format cmd > env.bat
 call env.bat
 echo %ANTHROPIC_AUTH_TOKEN%
 ```
 
 #### PowerShell 中使用
 ```powershell
-llmctl export --format powershell | Invoke-Expression
+ctl export --format powershell | Invoke-Expression
 Write-Host $env:ANTHROPIC_AUTH_TOKEN
 ```
 
@@ -770,16 +821,16 @@ Write-Host $env:ANTHROPIC_AUTH_TOKEN
 
 #### Bash 中使用
 ```bash
-llmctl export
+ctl export
 echo $ANTHROPIC_AUTH_TOKEN
 ```
 
 #### Zsh 中使用
 ```zsh
-llmctl export
+ctl export
 echo $ANTHROPIC_AUTH_TOKEN
 ```
 
 ---
 
-更多问题和建议，请访问 [GitHub Issues](https://github.com/3202336152/llmctl/issues)。
+更多问题和建议，请访问 [GitHub Issues](https://github.com/3202336152/ctl/issues)。

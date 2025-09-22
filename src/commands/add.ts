@@ -1,9 +1,9 @@
 import { Command } from "commander";
-import inquirer from "inquirer";
 import chalk from "chalk";
 import { configManager } from "../config.js";
 import { providerRegistry } from "../providers/index.js";
-import { EnvExporter } from "../utils/env.js";
+import { setupProviderEnvironment } from "../utils/provider-setup.js";
+import { prompt } from "../utils/inquirer.js";
 import type { Provider, ProviderTemplate } from "../types.js";
 
 export function createAddCommand(): Command {
@@ -28,7 +28,7 @@ export function createAddCommand(): Command {
             console.error(chalk.red(`❌ 模板 "${options.template}" 不存在`));
             console.log(
               chalk.blue("💡 使用 ") +
-                chalk.cyan("llmctl add --list-templates") +
+                chalk.cyan("ctl add --list-templates") +
                 chalk.blue(" 查看可用模板"),
             );
             process.exit(1);
@@ -45,12 +45,12 @@ export function createAddCommand(): Command {
         console.log(chalk.green(`✅ 成功添加 Provider: ${provider.name}`));
         console.log(
           chalk.blue("💡 使用 ") +
-            chalk.cyan(`llmctl use ${provider.id}`) +
+            chalk.cyan(`ctl use ${provider.id}`) +
             chalk.blue(" 选择此 Provider"),
         );
 
         // 询问是否立即选择此 Provider
-        const { useNow } = await inquirer.prompt([
+        const { useNow } = await prompt([
           {
             type: "confirm",
             name: "useNow",
@@ -65,52 +65,8 @@ export function createAddCommand(): Command {
             chalk.green(`🎯 已选择 "${provider.name}" 作为当前 Provider`),
           );
 
-          // 自动应用环境变量
-          const envVars = providerRegistry.getProviderEnvVars(provider);
-          if (Object.keys(envVars).length > 0) {
-            console.log(chalk.blue("🔄 正在自动设置环境变量..."));
-
-            // 显示即将设置的环境变量
-            console.log(chalk.gray("即将设置的环境变量:"));
-            Object.entries(envVars).forEach(([key, value]) => {
-              const maskedValue =
-                key.toLowerCase().includes("key") ||
-                key.toLowerCase().includes("token")
-                  ? value.replace(/./g, "*").slice(0, 8) + "..."
-                  : value;
-              console.log(chalk.gray(`  ${key}=${maskedValue}`));
-            });
-            console.log();
-
-            try {
-              const result = await EnvExporter.autoApplyEnvironmentVariables(
-                envVars,
-                provider.name,
-              );
-              if (result.success) {
-                console.log(chalk.green(`✅ ${result.message}`));
-              } else {
-                console.log(chalk.yellow(`⚠️  ${result.message}`));
-                console.log(
-                  chalk.blue("💡 您可以手动执行: ") +
-                    chalk.cyan(
-                      "llmctl export --format cmd > env.bat && call env.bat",
-                    ),
-                );
-              }
-            } catch (error) {
-              console.log(
-                chalk.red("❌ 自动设置环境变量失败:"),
-                error instanceof Error ? error.message : "未知错误",
-              );
-              console.log(
-                chalk.blue("💡 您可以手动执行: ") +
-                  chalk.cyan(
-                    "llmctl export --format cmd > env.bat && call env.bat",
-                  ),
-              );
-            }
-          }
+          // 使用公共的 Provider 设置流程
+          await setupProviderEnvironment(provider);
         }
       } catch (error) {
         console.error(
@@ -152,7 +108,7 @@ async function selectProviderTemplate(
     return templates[0];
   }
 
-  const { selectedTemplateId } = await inquirer.prompt([
+  const { selectedTemplateId } = await prompt([
     {
       type: "list",
       name: "selectedTemplateId",
@@ -175,7 +131,7 @@ async function createProviderFromTemplate(
   const answers: Record<string, any> = {};
 
   // 首先询问 Provider 名称，自动生成ID
-  const basicInfo = await inquirer.prompt([
+  const basicInfo = await prompt([
     {
       type: "input",
       name: "name",
@@ -232,7 +188,7 @@ async function createProviderFromTemplate(
 
   // 只有在ID冲突时才询问自定义ID
   if (needsCustomId) {
-    const { customId } = await inquirer.prompt([
+    const { customId } = await prompt([
       {
         type: "input",
         name: "customId",
@@ -259,8 +215,8 @@ async function createProviderFromTemplate(
   Object.assign(answers, { id: finalId, ...basicInfo });
 
   // 然后执行模板的设置提示
-  for (const prompt of template.setupPrompts) {
-    const result = await inquirer.prompt([prompt as any]);
+  for (const promptConfig of template.setupPrompts) {
+    const result = await prompt([promptConfig as any]);
     Object.assign(answers, result);
   }
 

@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import inquirer from "inquirer";
 import chalk from "chalk";
 import { configManager } from "../config.js";
+import { prompt } from "../utils/inquirer.js";
 
 export function createRemoveCommand(): Command {
   return new Command("remove")
@@ -32,7 +32,7 @@ export function createRemoveCommand(): Command {
             console.error(chalk.red(`❌ Provider "${providerId}" 不存在`));
             console.log(
               chalk.blue("💡 使用 ") +
-                chalk.cyan("llmctl list") +
+                chalk.cyan("ctl list") +
                 chalk.blue(" 查看可用的 Providers"),
             );
             process.exit(1);
@@ -58,7 +58,7 @@ export function createRemoveCommand(): Command {
             console.log(chalk.red("   这是当前使用的 Provider!"));
           }
 
-          const { confirmDelete } = await inquirer.prompt([
+          const { confirmDelete } = await prompt([
             {
               type: "confirm",
               name: "confirmDelete",
@@ -90,7 +90,7 @@ export function createRemoveCommand(): Command {
           );
           console.log(
             chalk.blue("💡 使用 ") +
-              chalk.cyan("llmctl use") +
+              chalk.cyan("ctl use") +
               chalk.blue(" 选择新的 Provider"),
           );
         }
@@ -98,7 +98,7 @@ export function createRemoveCommand(): Command {
         // 如果还有其他 Providers，询问是否立即选择一个
         const remainingProviders = configManager.getAllProviders();
         if (remainingProviders.length > 0 && isActive) {
-          const { selectNew } = await inquirer.prompt([
+          const { selectNew } = await prompt([
             {
               type: "confirm",
               name: "selectNew",
@@ -108,7 +108,7 @@ export function createRemoveCommand(): Command {
           ]);
 
           if (selectNew) {
-            const { newProviderId } = await inquirer.prompt([
+            const { newProviderId } = await prompt([
               {
                 type: "list",
                 name: "newProviderId",
@@ -153,7 +153,7 @@ async function selectProviderToRemove(providers: any[]): Promise<string> {
     };
   });
 
-  const { selectedProviderId } = await inquirer.prompt([
+  const { selectedProviderId } = await prompt([
     {
       type: "list",
       name: "selectedProviderId",
@@ -177,7 +177,7 @@ async function removeAllProviders(force: boolean): Promise<void> {
     );
     console.log(chalk.gray("这将清除所有配置的 LLM Providers"));
 
-    const { confirmDeleteAll } = await inquirer.prompt([
+    const { confirmDeleteAll } = await prompt([
       {
         type: "input",
         name: "confirmDeleteAll",
@@ -211,7 +211,7 @@ async function removeAllProviders(force: boolean): Promise<void> {
   if (deleteCount > 0) {
     console.log(
       chalk.blue("💡 使用 ") +
-        chalk.cyan("llmctl add") +
+        chalk.cyan("ctl add") +
         chalk.blue(" 添加新的 Provider"),
     );
   }

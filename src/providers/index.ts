@@ -22,7 +22,7 @@ export class AnthropicProvider extends BaseProvider {
   getTemplate(): ProviderTemplate {
     return {
       id: SupportedProviders.ANTHROPIC,
-      name: "LLM API 配置",
+      name: "LLM API 配置名称",
       description: "配置大语言模型 API描述 (支持 Claude、GLM、Qwen 等)",
       envVars: {
         ANTHROPIC_AUTH_TOKEN: "",

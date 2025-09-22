@@ -24,7 +24,7 @@ export function createCurrentCommand(): Command {
             console.log(chalk.yellow("😟 当前没有选择活跃的 Provider"));
             console.log(
               chalk.blue("💡 使用 ") +
-                chalk.cyan("llmctl use <provider-id>") +
+                chalk.cyan("ctl use <provider-id>") +
                 chalk.blue(" 选择一个 Provider"),
             );
           }
@@ -111,7 +111,7 @@ export function createCurrentCommand(): Command {
 
           console.log(
             chalk.blue("   💡 使用 ") +
-              chalk.cyan("llmctl export") +
+              chalk.cyan("ctl export") +
               chalk.blue(" 导出环境变量"),
           );
         }
