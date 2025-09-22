@@ -10,7 +10,7 @@
     "anthropic",
     "typescript"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "llmctl",
   "license": "MIT",
   "type": "module",
   "engines": {

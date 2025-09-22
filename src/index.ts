@@ -1,7 +1,12 @@
 // 主要 API 导出
-export { ConfigManager, configManager } from './config.js'
-export { BaseProvider, AnthropicProvider, ProviderRegistry, providerRegistry } from './providers/index.js'
-export { EnvExporter } from './utils/env.js'
+export { ConfigManager, configManager } from "./config.js";
+export {
+  BaseProvider,
+  AnthropicProvider,
+  ProviderRegistry,
+  providerRegistry,
+} from "./providers/index.js";
+export { EnvExporter } from "./utils/env.js";
 
 // 类型导出
 export type {
@@ -17,7 +22,7 @@ export type {
   SystemInfo,
   ErrorContext,
   CliCommandName,
-} from './types.js'
+} from "./types.js";
 
 // 常量导出
 export {
@@ -26,7 +31,7 @@ export {
   CLI_COMMANDS,
   ProviderSchema,
   ConfigSchema,
-} from './types.js'
+} from "./types.js";
 
 // 版本信息
-export const VERSION = '1.0.0'
+export const VERSION = "1.0.0";
