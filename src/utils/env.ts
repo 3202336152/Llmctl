@@ -1,25 +1,86 @@
 import type { ExportOptions, EnvExportResult } from "../types.js";
-import { writeFileSync, unlinkSync } from "fs";
-import { join } from "path";
-import { spawn } from "child_process";
+
+// 平台指导信息常量
+const PLATFORM_INSTRUCTIONS = {
+  bash: {
+    title: "Bash/Zsh",
+    methods: [
+      {
+        name: "直接执行",
+        command: "llmctl export | source /dev/stdin"
+      },
+      {
+        name: "或者先生成脚本文件",
+        command: "llmctl export > llmctl-env.sh\n   source llmctl-env.sh"
+      }
+    ],
+    note: "注意：环境变量仅在当前会话中有效，如需永久设置请将命令添加到 ~/.bashrc 或 ~/.zshrc 文件中。"
+  },
+  powershell: {
+    title: "PowerShell",
+    methods: [
+      {
+        name: "直接执行",
+        command: "llmctl export --format powershell | Invoke-Expression"
+      },
+      {
+        name: "或者先生成脚本文件",
+        command: "llmctl export --format powershell > llmctl-env.ps1\n   . ./llmctl-env.ps1"
+      }
+    ],
+    note: "注意：环境变量仅在当前会话中有效，如需永久设置请将命令添加到 $PROFILE 文件中。"
+  },
+  cmd: {
+    title: "CMD",
+    methods: [
+      {
+        name: "一键执行（推荐）",
+        command: "llmctl export --format cmd > env.bat && call env.bat"
+      },
+      {
+        name: "分步执行",
+        command: "llmctl export --format cmd > llmctl-env.bat\n   call llmctl-env.bat"
+      }
+    ],
+    note: "注意：环境变量仅在当前会话中有效，如需永久设置请通过\"系统属性\"->\"环境变量\"进行设置。"
+  },
+  json: {
+    title: "JSON 格式",
+    methods: [
+      {
+        name: "导出到文件",
+        command: "llmctl export --format json > environment.json"
+      },
+      {
+        name: "直接输出",
+        command: "llmctl export --format json"
+      }
+    ],
+    note: "注意：JSON 格式主要用于程序处理，可被其他工具解析和使用。"
+  }
+} as const;
 
 export class EnvExporter {
   static generateExportCommand(
-    variables: Record<string, string>,
-    options: ExportOptions = { format: "bash" },
+      variables: Record<string, string>,
+      options: ExportOptions = { format: "bash" },
   ): string {
+    if (!variables || typeof variables !== "object") {
+      throw new Error("环境变量参数必须是一个对象");
+    }
+
     const entries = Object.entries(variables);
 
     switch (options.format) {
       case "bash":
         return entries
-          .map(([key, value]) => `export ${key}="${value}"`)
-          .join("\n");
+            .map(([key, value]) => `export ${key}="${value}"`)
+            .join("\n");
 
       case "powershell":
         return entries
-          .map(([key, value]) => `$env:${key}="${value}"`)
-          .join("\n");
+            .map(([key, value]) => `$env:${key}="${value}"`)
+            .join("\n");
 
       case "cmd":
         return entries.map(([key, value]) => `set ${key}=${value}`).join("\n");
@@ -38,8 +99,8 @@ export class EnvExporter {
 
     if (platform === "win32") {
       if (
-        shell.toLowerCase().includes("powershell") ||
-        shell.toLowerCase().includes("pwsh")
+          shell.toLowerCase().includes("powershell") ||
+          shell.toLowerCase().includes("pwsh")
       ) {
         return "powershell";
       }
@@ -50,7 +111,7 @@ export class EnvExporter {
   }
 
   static async exportToCurrentShell(
-    variables: Record<string, string>,
+      variables: Record<string, string>,
   ): Promise<EnvExportResult> {
     try {
       const format = this.detectShellFormat();
@@ -76,8 +137,8 @@ export class EnvExporter {
   }
 
   static generateShellScript(
-    variables: Record<string, string>,
-    options: ExportOptions = { format: "bash" },
+      variables: Record<string, string>,
+      options: ExportOptions = { format: "bash" },
   ): string {
     const commands = this.generateExportCommand(variables, options);
     const format = options.format;
@@ -91,8 +152,8 @@ ${commands}
 
 echo "已加载 llmctl 环境变量:"
 ${Object.keys(variables)
-  .map((key) => `echo "  ${key}=$${key}"`)
-  .join("\n")}
+          .map((key) => `echo "  ${key}=\$${key}"`)
+          .join("\n")}
 `;
     }
 
@@ -104,8 +165,8 @@ ${commands}
 
 Write-Host "已加载 llmctl 环境变量:"
 ${Object.keys(variables)
-  .map((key) => `Write-Host "  ${key}=$env:${key}"`)
-  .join("\n")}
+          .map((key) => `Write-Host "  ${key}=$env:${key}"`)
+          .join("\n")}
 `;
     }
 
@@ -118,60 +179,12 @@ ${commands}
 
 echo 已加载 llmctl 环境变量:
 ${Object.keys(variables)
-  .map((key) => `echo   ${key}=%${key}%`)
-  .join("\n")}
+          .map((key) => `echo   ${key}=%${key}%`)
+          .join("\n")}
 `;
     }
 
     return commands;
-  }
-
-  static getScriptExtension(format: ExportOptions["format"]): string {
-    switch (format) {
-      case "bash":
-        return ".sh";
-      case "powershell":
-        return ".ps1";
-      case "cmd":
-        return ".bat";
-      case "json":
-        return ".json";
-      default:
-        return ".txt";
-    }
-  }
-
-  static printExportInstructions(
-    variables: Record<string, string>,
-    format: ExportOptions["format"],
-  ): void {
-    const keys = Object.keys(variables);
-    console.log(`\n已生成 ${keys.length} 个环境变量的导出命令:\n`);
-
-    switch (format) {
-      case "bash":
-        console.log("在 Bash/Zsh 中使用:");
-        console.log("  llmctl export | source /dev/stdin");
-        console.log("或者:");
-        console.log("  llmctl export");
-        break;
-
-      case "powershell":
-        console.log("在 PowerShell 中使用:");
-        console.log("  llmctl export --format powershell | Invoke-Expression");
-        break;
-
-      case "cmd":
-        console.log("在 CMD 中使用:");
-        console.log("  将输出保存到 .bat 文件并执行");
-        break;
-
-      case "json":
-        console.log("JSON 格式，可用于其他工具处理");
-        break;
-    }
-
-    console.log(`\n环境变量列表: ${keys.join(", ")}`);
   }
 
   static validateEnvironmentVariables(variables: Record<string, string>): {
@@ -189,7 +202,7 @@ ${Object.keys(variables)
 
       if (!/^[A-Z][A-Z0-9_]*$/.test(key)) {
         warnings.push(
-          `环境变量名 "${key}" 不符合常见命名规范 (建议使用大写字母和下划线)`,
+            `环境变量名 "${key}" 不符合常见命名规范 (建议使用大写字母和下划线)`,
         );
       }
 
@@ -210,91 +223,73 @@ ${Object.keys(variables)
   }
 
   /**
-   * 自动执行环境变量设置
-   * 生成临时脚本文件并执行，适用于 Windows cmd 环境
+   * 生成平台特定的指导信息
+   */
+  private static generatePlatformInstructions(
+    format: ExportOptions["format"],
+    providerName: string,
+    commands: string,
+    variableCount: number
+  ): string {
+    const platformInfo = PLATFORM_INSTRUCTIONS[format];
+
+    // 生成方法列表
+    const methodsList = platformInfo.methods
+      .map((method, index) => {
+        const methodCommands = method.command.split('\n')
+          .map(cmd => `   ${cmd}`)
+          .join('\n');
+        return `${index + 1}. ${method.name}：\n${methodCommands}`;
+      })
+      .join('\n\n');
+
+    // 生成手动设置命令
+    const manualCommands = commands.split('\n')
+      .map(cmd => `   ${cmd}`)
+      .join('\n');
+
+    return `已为 ${providerName} 生成 ${variableCount} 个环境变量的设置命令：
+
+在 ${platformInfo.title} 中使用以下方法：
+
+${methodsList}
+
+${platformInfo.methods.length + 1}. 手动设置：
+${manualCommands}
+
+${platformInfo.note}`;
+  }
+
+  /**
+   * 生成环境变量设置指导信息
+   * 根据不同的平台提供相应的环境变量设置命令
    */
   static async autoApplyEnvironmentVariables(
-    variables: Record<string, string>,
-    _providerName: string,
+      variables: Record<string, string>,
+      providerName: string,
   ): Promise<EnvExportResult> {
     try {
       const format = this.detectShellFormat();
-      const tempDir = process.env.TEMP || process.env.TMP || ".";
-      const timestamp = Date.now();
+      const commands = this.generateExportCommand(variables, { format });
+      const variableCount = Object.keys(variables).length;
 
-      if (format === "cmd") {
-        // Windows CMD - 生成批处理文件并执行
-        const batFile = join(tempDir, `llmctl-env-${timestamp}.bat`);
-        const commands = this.generateExportCommand(variables, {
-          format: "cmd",
-        });
+      const instructions = this.generatePlatformInstructions(
+        format,
+        providerName,
+        commands,
+        variableCount
+      );
 
-        // 生成批处理文件内容（只包含 set 命令，不包含中文）
-        const batContent = `@echo off
-REM llmctl auto-generated environment variables
-${commands}
-`;
-
-        writeFileSync(batFile, batContent, "ascii");
-
-        return new Promise((resolve) => {
-          const child = spawn("cmd", ["/c", `call "${batFile}"`], {
-            stdio: "pipe", // 改为 pipe 模式，避免输出乱码
-            shell: true,
-            env: { ...process.env, ...variables },
-          });
-
-          child.on("close", (code) => {
-            try {
-              unlinkSync(batFile); // 清理临时文件
-            } catch {
-              // 忽略清理错误
-            }
-
-            if (code === 0) {
-              // 更新当前进程的环境变量
-              Object.entries(variables).forEach(([key, value]) => {
-                process.env[key] = value;
-              });
-
-              resolve({
-                success: true,
-                message: `已自动设置 ${Object.keys(variables).length} 个环境变量`,
-                variables,
-              });
-            } else {
-              resolve({
-                success: false,
-                message: `环境变量设置失败，退出代码: ${code}`,
-                variables: {},
-              });
-            }
-          });
-
-          child.on("error", (error) => {
-            resolve({
-              success: false,
-              message: `执行批处理文件失败: ${error.message}`,
-              variables: {},
-            });
-          });
-        });
-      } else {
-        // 对于其他平台，只在当前进程中设置
-        Object.entries(variables).forEach(([key, value]) => {
-          process.env[key] = value;
-        });
-
-        return {
-          success: true,
-          message: `已在当前进程中设置 ${Object.keys(variables).length} 个环境变量`,
-          variables,
-        };
-      }
+      return {
+        success: true,
+        message: instructions,
+        variables,
+        shellCommand: commands,
+      };
     } catch (error) {
       return {
         success: false,
-        message: `自动设置环境变量失败: ${error instanceof Error ? error.message : "未知错误"}`,
+        message: `生成环境变量设置指导失败: ${error instanceof Error ? error.message : "未知错误"}`,
         variables: {},
       };
     }
