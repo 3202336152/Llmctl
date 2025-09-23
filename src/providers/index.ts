@@ -129,11 +129,7 @@ export class AnthropicProvider extends BaseProvider {
         const tokenConfig = provider.tokens.find(
           (t) => t.value === currentEnvToken,
         );
-        if (
-          tokenConfig &&
-          tokenConfig.enabled !== false &&
-          tokenConfig.healthy !== false
-        ) {
+        if (tokenConfig && tokenConfig.enabled !== false) {
           return currentEnvToken;
         }
       }

@@ -6,7 +6,7 @@ import { prompt } from "../utils/inquirer.js";
 import type { Provider, TokenConfig } from "../types.js";
 
 export function createTokensCommand(): Command {
-  return new Command("tokens")
+  return new Command("token")
     .description("Token管理 - 支持多Token轮询")
     .argument("[provider-id]", "Provider ID (可选)")
     .argument("[action]", "操作类型: add, list, strategy (可选)")
@@ -86,15 +86,58 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
     // 显示当前Token状态
     showTokenSummary(provider);
 
-    const menuChoices = [
-      { name: "📋 查看Token详情", value: "list" },
-      { name: "➕ 添加Token", value: "add" },
-      { name: "✏️  编辑Token", value: "edit" },
-      { name: "🗑️  删除Token", value: "delete" },
-      { name: "⚙️  设置轮询策略", value: "strategy" },
-      { name: "🔄 快速切换Token状态", value: "quick-toggle" },
-      { name: "🚪 退出", value: "exit" },
-    ];
+    // 动态构建菜单选项 - 方案3实现
+    const allTokens = getAllTokensForDisplay(provider);
+    const currentToken = getCurrentTokenForDisplay(provider);
+    const hasMultipleTokens = allTokens.length > 1;
+    const hasAvailableTokens = allTokens.some(
+      (t) => t.enabled !== false && t.value !== currentToken,
+    );
+
+    const menuChoices = [];
+
+    // 1. 禁用当前Token选项（最常用，放在首位）
+    if (currentToken && hasAvailableTokens) {
+      const currentTokenConfig = allTokens.find(
+        (t) => t.value === currentToken,
+      );
+      const currentAlias = currentTokenConfig?.alias || "当前Token";
+      menuChoices.push({
+        name: `🚫 禁用当前Token (${currentAlias})`,
+        value: "disable-current",
+      });
+    }
+
+    // 2. Token列表（合并查看功能）
+    const enabled = allTokens.filter((t) => t.enabled !== false).length;
+    const disabled = allTokens.length - enabled;
+    menuChoices.push({
+      name: `📋 Token列表 (${enabled}✅ ${disabled}❌)`,
+      value: "list",
+    });
+
+    // 3. 常用操作
+    menuChoices.push({ name: "➕ 添加Token", value: "add" });
+
+    // 4. 批量操作（合并批量功能）
+    if (hasMultipleTokens) {
+      menuChoices.push({ name: "📦 批量操作", value: "batch-operations" });
+    }
+
+    // 5. 高级设置（合并不常用功能）
+    const advancedOptions = [];
+    advancedOptions.push("✏️ 编辑Token");
+    advancedOptions.push("🗑️ 删除Token");
+    if (hasMultipleTokens) {
+      advancedOptions.push("⚙️ 轮询策略");
+    }
+    menuChoices.push({
+      name: `⚙️ 高级设置 (${advancedOptions.length}项)`,
+      value: "advanced",
+    });
+
+    // 6. 退出
+    menuChoices.push({ name: "🚪 退出", value: "exit" });
 
     const { action } = await prompt([
       {
@@ -116,6 +159,9 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
     if (lastSelectedIndex === -1) lastSelectedIndex = 0;
 
     switch (action) {
+      case "disable-current":
+        await disableCurrentToken(provider);
+        break;
       case "list":
         showTokenList(provider);
         await prompt([
@@ -125,17 +171,11 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
       case "add":
         await addTokenInteractive(provider);
         break;
-      case "edit":
-        await editTokenInteractive(provider);
+      case "batch-operations":
+        await batchOperationsMenu(provider);
         break;
-      case "delete":
-        await deleteTokenInteractive(provider);
-        break;
-      case "strategy":
-        await setStrategyInteractive(provider);
-        break;
-      case "quick-toggle":
-        await quickToggleTokenStatus(provider);
+      case "advanced":
+        await advancedSettingsMenu(provider);
         break;
       case "exit":
         return;
@@ -146,24 +186,38 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
 // 显示Token摘要 - 统一显示方式
 function showTokenSummary(provider: Provider): void {
   const allTokens = getAllTokensForDisplay(provider);
+  const currentToken = getCurrentTokenForDisplay(provider);
 
   if (allTokens.length === 0) {
     console.log(chalk.red("❌ 当前没有任何Token配置"));
     console.log(chalk.gray("💡 请添加Token以开始使用\n"));
   } else {
     const enabled = allTokens.filter((t) => t.enabled !== false).length;
-    const healthy = allTokens.filter((t) => t.healthy !== false).length;
-    console.log(chalk.green("🔄 Token管理"));
-    console.log(
-      chalk.blue(
-        `📊 Token数量: ${enabled}/${allTokens.length} 可用, ${healthy}/${allTokens.length} 健康`,
-      ),
-    );
 
+    // 构建一行显示信息
+    let displayInfo = "";
+
+    // 当前Token信息
+    if (currentToken) {
+      const currentTokenConfig = allTokens.find(
+        (t) => t.value === currentToken,
+      );
+      const currentAlias = currentTokenConfig?.alias || "当前Token";
+      displayInfo += `✅ ${currentAlias} ⭐ [当前使用]`;
+    }
+
+    // 统计信息
+    const statsInfo = `📊 ${enabled}/${allTokens.length}可用`;
+    displayInfo += displayInfo ? ` | ${statsInfo}` : statsInfo;
+
+    // 策略信息
     if (allTokens.length > 1) {
       const strategy = provider.tokenStrategy?.type || "round-robin";
-      console.log(chalk.blue(`🔄 轮询策略: ${getStrategyName(strategy)}`));
+      displayInfo += ` | 🔄 ${getStrategyName(strategy)}策略`;
     }
+
+    // 使用默认白色显示
+    console.log(displayInfo);
     console.log();
   }
 }
@@ -172,7 +226,7 @@ function showTokenSummary(provider: Provider): void {
 async function addTokenInteractive(provider: Provider): Promise<void> {
   console.log(chalk.blue("\n➕ 添加新Token\n"));
 
-  const { tokenValue, alias, weight, healthy } = await prompt([
+  const { tokenValue, alias, weight } = await prompt([
     {
       type: "password",
       name: "tokenValue",
@@ -211,12 +265,6 @@ async function addTokenInteractive(provider: Provider): Promise<void> {
         return (num >= 1 && num <= 10) || "权重必须是1-10之间的整数";
       },
     },
-    {
-      type: "confirm",
-      name: "healthy",
-      message: "是否为健康状态?",
-      default: true,
-    },
   ]);
 
   const newToken = {
@@ -224,7 +272,6 @@ async function addTokenInteractive(provider: Provider): Promise<void> {
     alias: alias || undefined,
     weight: parseInt(weight) as number,
     enabled: true, // 默认启用，直接加入轮询池
-    healthy: healthy as boolean,
   };
 
   // 初始化tokens数组（如果不存在）
@@ -247,7 +294,6 @@ async function addTokenInteractive(provider: Provider): Promise<void> {
         alias: "原始Token" as string,
         weight: 1 as number,
         enabled: true as boolean,
-        healthy: true as boolean,
       };
       provider.tokens.unshift(existingTokenConfig); // 使用unshift让原始Token排在第一个
       console.log(chalk.blue("🔄 已将现有的envVars Token迁移到多Token配置中"));
@@ -276,7 +322,7 @@ async function editTokenInteractive(provider: Provider): Promise<void> {
 
   // 统一的token选择编辑（不区分单token和多token）
   const choices = allTokens.map((token, index) => ({
-    name: `${token.alias || `Token-${index + 1}`} (${token.value.slice(0, 8)}...) - 权重:${token.weight || 1} ${token.enabled === false ? "[已禁用]" : ""} ${token.healthy === false ? "[不健康]" : ""}`,
+    name: `${token.alias || `Token-${index + 1}`} (${token.value.slice(0, 8)}...) - 权重:${token.weight || 1} ${token.enabled === false ? "[已禁用]" : ""}`,
     value: index,
   }));
 
@@ -308,7 +354,7 @@ async function editTokenInteractive(provider: Provider): Promise<void> {
   }
 
   // 编辑token属性
-  const { alias, weight, enabled, healthy } = await prompt([
+  const { alias, weight, enabled } = await prompt([
     {
       type: "input",
       name: "alias",
@@ -331,12 +377,6 @@ async function editTokenInteractive(provider: Provider): Promise<void> {
       message: "是否启用该Token?",
       default: token.enabled !== false,
     },
-    {
-      type: "confirm",
-      name: "healthy",
-      message: "是否为健康状态?",
-      default: token.healthy !== false,
-    },
   ]);
 
   // 更新Token - 现在所有token都在tokens数组中
@@ -345,7 +385,6 @@ async function editTokenInteractive(provider: Provider): Promise<void> {
     actualToken.alias = alias || undefined;
     actualToken.weight = parseInt(weight);
     actualToken.enabled = enabled;
-    actualToken.healthy = healthy;
   }
 
   await saveProvider(provider);
@@ -494,91 +533,6 @@ async function setStrategyInteractive(provider: Provider): Promise<void> {
 }
 
 // 快速切换Token状态
-async function quickToggleTokenStatus(provider: Provider): Promise<void> {
-  const allTokens = getAllTokensForDisplay(provider);
-
-  if (allTokens.length === 0) {
-    console.log(chalk.yellow("❌ 没有可操作的Token"));
-    return;
-  }
-
-  if (allTokens.length === 1) {
-    console.log(chalk.yellow("⚠️  只有一个Token，无需切换"));
-    return;
-  }
-
-  console.log(chalk.cyan("\n🔄 快速切换Token状态\n"));
-
-  // 获取当前正在使用的token - 使用统一函数
-  const currentToken = getCurrentTokenForDisplay(provider);
-
-  // 显示当前token状态
-  console.log(chalk.bold("当前Token状态:"));
-  allTokens.forEach((token, index) => {
-    const statusIcon = token.enabled === false ? "❌" : "✅";
-    const statusText =
-      token.enabled === false ? chalk.red("[已禁用]") : chalk.green("[已启用]");
-
-    // 检查是否为当前使用的token
-    const isCurrent = token.value === currentToken;
-    const currentMarker = isCurrent ? chalk.yellow(" ⭐") : "";
-
-    console.log(
-      `${index + 1}. ${statusIcon} ${chalk.cyan(token.alias || `Token-${index + 1}`)}${currentMarker} ${statusText}`,
-    );
-  });
-
-  // 动态生成菜单选项
-  const menuChoices = [];
-
-  // 1. 禁用当前Token选项 (第一个)
-  if (currentToken) {
-    const currentTokenInfo = allTokens.find((t) => t.value === currentToken);
-    if (currentTokenInfo && currentTokenInfo.enabled !== false) {
-      menuChoices.push({
-        name: `🚫 禁用当前Token (${currentTokenInfo.alias || "Token"})`,
-        value: "disable-current",
-      });
-    }
-  }
-
-  // 2. 其他操作选项
-  menuChoices.push(
-    { name: "📦 批量禁用Token", value: "batch-disable" },
-    { name: "📦 批量启用Token", value: "batch-enable" },
-  );
-
-  menuChoices.push({ name: "🔙 返回", value: "back" });
-
-  const { action } = await prompt([
-    {
-      type: "list",
-      name: "action",
-      message: "\n选择操作:",
-      choices: menuChoices,
-      pageSize: menuChoices.length, // 动态设置页面大小
-      loop: false,
-    },
-  ]);
-
-  if (action === "back") return;
-
-  // 处理快捷禁用当前Token
-  if (action === "disable-current") {
-    const currentTokenInfo = allTokens.find((t) => t.value === currentToken);
-    if (currentTokenInfo) {
-      await disableCurrentTokenQuickly(provider, currentTokenInfo, allTokens);
-    }
-    return;
-  }
-
-  // 处理批量操作
-  if (action === "batch-disable" || action === "batch-enable") {
-    await handleBatchTokenOperation(provider, allTokens, action);
-    return;
-  }
-}
-
 // 更新环境变量
 async function updateEnvironmentVariable(
   provider: Provider,
@@ -639,11 +593,7 @@ function showTokenList(provider: Provider): void {
   // 显示所有token
   allTokens.forEach((token, index) => {
     const status =
-      token.enabled === false
-        ? chalk.red("[已禁用]")
-        : token.healthy === false
-          ? chalk.yellow("[不健康]")
-          : chalk.green("[健康]");
+      token.enabled === false ? chalk.red("[已禁用]") : chalk.green("[已启用]");
 
     // 检查是否为当前使用的token
     const isCurrent = token.value === currentToken;
@@ -674,7 +624,6 @@ function getAllTokensForDisplay(provider: Provider): TokenConfig[] {
         alias: "单Token配置",
         weight: 1,
         enabled: true,
-        healthy: true,
       },
     ];
   }
@@ -705,11 +654,7 @@ function getCurrentTokenForDisplay(provider: Provider): string | null {
       const tokenConfig = provider.tokens.find(
         (t) => t.value === currentEnvToken,
       );
-      if (
-        tokenConfig &&
-        tokenConfig.enabled !== false &&
-        tokenConfig.healthy !== false
-      ) {
+      if (tokenConfig && tokenConfig.enabled !== false) {
         return currentEnvToken;
       }
     }
@@ -727,66 +672,6 @@ async function saveProvider(provider: Provider): Promise<void> {
 }
 
 // 快捷禁用当前Token
-async function disableCurrentTokenQuickly(
-  provider: Provider,
-  targetToken: TokenConfig,
-  allTokens: TokenConfig[],
-): Promise<void> {
-  console.log(
-    chalk.yellow(
-      `⚠️  即将禁用当前使用的Token: ${targetToken.alias || "Token"}`,
-    ),
-  );
-
-  // 先获取下一个可用Token（在禁用当前Token之前，排除当前要禁用的token）
-  const nextToken = TokenRotationManager.getNextToken(
-    provider,
-    targetToken.value,
-  );
-
-  if (nextToken && nextToken !== targetToken.value) {
-    // 先切换到下一个Token
-    const result = await updateEnvironmentVariable(provider, nextToken);
-
-    if (result.success) {
-      // 切换成功后再禁用原Token
-      targetToken.enabled = false;
-      await saveProvider(provider);
-
-      const nextTokenInfo = allTokens.find((t) => t.value === nextToken);
-      console.log(
-        chalk.green(
-          `✅ 已自动切换到: ${nextTokenInfo?.alias || "Token"} (${nextToken.slice(0, 8)}...)`,
-        ),
-      );
-      console.log(chalk.blue("🔄 环境变量已在当前进程中生效"));
-
-      // 验证环境变量是否真的已经设置
-      const currentEnvToken = process.env.ANTHROPIC_AUTH_TOKEN;
-      if (currentEnvToken === nextToken) {
-        console.log(chalk.green("✓ 验证通过：环境变量已更新"));
-      } else {
-        console.log(
-          chalk.yellow("⚠️  注意：环境变量可能需要重启终端才能完全生效"),
-        );
-      }
-
-      console.log(
-        chalk.green(`✅ 已禁用Token "${targetToken.alias || "Token"}"`),
-      );
-    } else {
-      console.log(chalk.red(`❌ 切换失败: ${result.message}`));
-      console.log(chalk.yellow("取消禁用操作"));
-    }
-  } else {
-    console.log(chalk.red("❌ 没有其他可用Token，无法禁用当前Token"));
-    console.log(chalk.yellow("请先添加或启用其他Token"));
-  }
-
-  // 等待用户确认后继续
-  await prompt([{ type: "input", name: "continue", message: "按回车继续..." }]);
-}
-
 // 处理批量Token操作
 async function handleBatchTokenOperation(
   provider: Provider,
@@ -871,7 +756,6 @@ async function handleBatchTokenOperation(
 
   // 执行批量操作
   let successCount = 0;
-  let errorCount = 0;
 
   for (const token of selectedTokens) {
     try {
@@ -896,7 +780,6 @@ async function handleBatchTokenOperation(
               console.log(
                 chalk.red(`❌ 切换失败，跳过禁用: ${token.alias || "Token"}`),
               );
-              errorCount++;
             }
           } else {
             console.log(
@@ -904,7 +787,6 @@ async function handleBatchTokenOperation(
                 `❌ 无其他可用Token，跳过禁用: ${token.alias || "Token"}`,
               ),
             );
-            errorCount++;
           }
         } else {
           token.enabled = false;
@@ -916,7 +798,6 @@ async function handleBatchTokenOperation(
       }
     } catch {
       console.log(chalk.red(`❌ ${actionText}失败: ${token.alias || "Token"}`));
-      errorCount++;
     }
   }
 
@@ -926,9 +807,149 @@ async function handleBatchTokenOperation(
   // 显示结果
   console.log(chalk.cyan("\n操作结果:"));
   console.log(chalk.green(`✅ 成功${actionText}: ${successCount} 个Token`));
-  if (errorCount > 0) {
-    console.log(chalk.red(`❌ 失败: ${errorCount} 个Token`));
+  await prompt([{ type: "input", name: "continue", message: "按回车继续..." }]);
+}
+
+// 禁用当前Token的快捷函数
+async function disableCurrentToken(provider: Provider): Promise<void> {
+  const allTokens = getAllTokensForDisplay(provider);
+  const currentToken = getCurrentTokenForDisplay(provider);
+
+  if (!currentToken) {
+    console.log(chalk.yellow("❌ 当前没有使用任何Token"));
+    await prompt([
+      { type: "input", name: "continue", message: "按回车继续..." },
+    ]);
+    return;
+  }
+
+  const currentTokenConfig = allTokens.find((t) => t.value === currentToken);
+  if (!currentTokenConfig) {
+    console.log(chalk.yellow("❌ 找不到当前Token配置"));
+    await prompt([
+      { type: "input", name: "continue", message: "按回车继续..." },
+    ]);
+    return;
+  }
+
+  // 检查是否有其他可用Token
+  const otherAvailableTokens = allTokens.filter(
+    (t) => t.enabled !== false && t.value !== currentToken,
+  );
+
+  if (otherAvailableTokens.length === 0) {
+    console.log(chalk.yellow(`❌ 没有其他可用Token，无法禁用当前Token`));
+    console.log(chalk.gray("请先添加或启用其他Token"));
+    await prompt([
+      { type: "input", name: "continue", message: "按回车继续..." },
+    ]);
+    return;
+  }
+
+  console.log(
+    chalk.yellow(
+      `⚠️ 即将禁用当前使用的Token: ${currentTokenConfig.alias || "Token"}`,
+    ),
+  );
+
+  // 禁用当前Token
+  currentTokenConfig.enabled = false;
+
+  // 自动切换到下一个可用Token
+  const nextToken = otherAvailableTokens[0];
+  const result = await updateEnvironmentVariable(provider, nextToken.value);
+
+  await saveProvider(provider);
+
+  if (result.success) {
+    console.log(
+      chalk.green(`✅ 已禁用Token: ${currentTokenConfig.alias || "Token"}`),
+    );
+    console.log(chalk.blue(`🔄 已自动切换到: ${nextToken.alias || "Token"}`));
+  } else {
+    console.log(
+      chalk.yellow(`⚠️ 已禁用Token: ${currentTokenConfig.alias || "Token"}`),
+    );
+    console.log(chalk.yellow("🔄 环境变量更新失败，请手动切换"));
   }
 
   await prompt([{ type: "input", name: "continue", message: "按回车继续..." }]);
+}
+
+// 批量操作菜单
+async function batchOperationsMenu(provider: Provider): Promise<void> {
+  const allTokens = getAllTokensForDisplay(provider);
+
+  if (allTokens.length < 2) {
+    console.log(chalk.yellow("❌ 至少需要2个Token才能进行批量操作"));
+    await prompt([
+      { type: "input", name: "continue", message: "按回车继续..." },
+    ]);
+    return;
+  }
+
+  const menuChoices = [
+    { name: "📦 批量禁用Token", value: "batch-disable" },
+    { name: "📦 批量启用Token", value: "batch-enable" },
+    { name: "🔙 返回", value: "back" },
+  ];
+
+  const { action } = await prompt([
+    {
+      type: "list",
+      name: "action",
+      message: "选择批量操作:",
+      choices: menuChoices,
+      pageSize: menuChoices.length,
+      loop: false,
+      prefix: "",
+    },
+  ]);
+
+  if (action === "back") return;
+
+  await handleBatchTokenOperation(provider, allTokens, action);
+}
+
+// 高级设置菜单
+async function advancedSettingsMenu(provider: Provider): Promise<void> {
+  const allTokens = getAllTokensForDisplay(provider);
+  const hasMultipleTokens = allTokens.length > 1;
+
+  const menuChoices = [
+    { name: "✏️ 编辑Token", value: "edit" },
+    { name: "🗑️ 删除Token", value: "delete" },
+  ];
+
+  if (hasMultipleTokens) {
+    menuChoices.push({ name: "⚙️ 轮询策略", value: "strategy" });
+  }
+
+  menuChoices.push({ name: "🔙 返回", value: "back" });
+
+  const { action } = await prompt([
+    {
+      type: "list",
+      name: "action",
+      message: "选择高级设置:",
+      choices: menuChoices,
+      pageSize: menuChoices.length,
+      loop: false,
+      prefix: "",
+    },
+  ]);
+
+  if (action === "back") return;
+
+  switch (action) {
+    case "edit":
+      await editTokenInteractive(provider);
+      break;
+    case "delete":
+      await deleteTokenInteractive(provider);
+      break;
+    case "strategy":
+      await setStrategyInteractive(provider);
+      break;
+  }
 }

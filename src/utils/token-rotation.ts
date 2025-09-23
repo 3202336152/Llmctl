@@ -18,9 +18,7 @@ export class TokenRotationManager {
 
     const availableTokens = provider.tokens.filter(
       (t) =>
-        t.enabled !== false &&
-        this.isTokenHealthy(t) &&
-        (!excludeToken || t.value !== excludeToken),
+        this.isTokenAvailable(t) && (!excludeToken || t.value !== excludeToken),
     );
 
     if (availableTokens.length === 0) {
@@ -174,9 +172,9 @@ export class TokenRotationManager {
     }
   }
 
-  private static isTokenHealthy(token: TokenConfig): boolean {
-    // 使用用户手动设置的健康状态
-    return token.healthy !== false;
+  private static isTokenAvailable(token: TokenConfig): boolean {
+    // 仅检查Token是否已启用
+    return token.enabled !== false;
   }
 
   // 获取Token统计信息
@@ -186,13 +184,11 @@ export class TokenRotationManager {
     return {
       total: provider.tokens.length,
       enabled: provider.tokens.filter((t) => t.enabled !== false).length,
-      healthy: provider.tokens.filter((t) => this.isTokenHealthy(t)).length,
       strategy: provider.tokenStrategy?.type || "round-robin",
       tokens: provider.tokens.map((token) => ({
         alias: token.alias || `${token.value.slice(0, 8)}...`,
         weight: token.weight || 1,
         enabled: token.enabled !== false,
-        healthy: this.isTokenHealthy(token),
       })),
     };
   }
@@ -230,8 +226,6 @@ export class TokenRotationManager {
       return !!(provider.apiKey || provider.envVars?.ANTHROPIC_AUTH_TOKEN);
     }
 
-    return provider.tokens.some(
-      (t) => t.enabled !== false && this.isTokenHealthy(t),
-    );
+    return provider.tokens.some((t) => this.isTokenAvailable(t));
   }
 }

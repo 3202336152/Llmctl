@@ -75,10 +75,10 @@ qwen
 |------|------|------|
 | `ctl add` | 交互式添加 Provider，可选择立即使用并启动CLI工具 | `ctl add` |
 | `ctl use <id>` | 选择 Provider，自动设置环境变量，可选择启动CLI工具 | `ctl use my-claude` |
-| `ctl tokens` | Token管理 - 支持多Token轮询配置 | `ctl tokens` |
-| `ctl tokens add` | 快速添加Token到指定Provider | `ctl tokens add` |
-| `ctl tokens list` | 查看Token列表和状态 | `ctl tokens list` |
-| `ctl tokens strategy` | 设置Token轮询策略 | `ctl tokens strategy` |
+| `ctl token` | Token管理 - 支持多Token轮询配置 | `ctl token` |
+| `ctl token add` | 快速添加Token到指定Provider | `ctl token add` |
+| `ctl token list` | 查看Token列表和状态 | `ctl token list` |
+| `ctl token strategy` | 设置Token轮询策略 | `ctl token strategy` |
 | `ctl list` | 列出所有 Providers | `ctl list` |
 | `ctl edit <id>` | 修改 Provider 配置 | `ctl edit my-claude` |
 | `ctl current` | 显示当前 Provider | `ctl current` |
@@ -96,8 +96,8 @@ llmctl 支持为单个Provider配置多个API Token，实现负载均衡和故�
 ### ✨ 核心特性
 
 - **🔄 四种轮询策略** - 支持轮询、加权轮询、随机选择、最少使用策略
-- **🛡️ 故障自动切换** - 自动检测错误Token并切换到健康Token
-- **📊 使用统计监控** - 实时监控Token使用情况和健康状态
+- **🛡️ 故障自动切换** - 自动检测错误Token并切换到可用Token
+- **📊 使用统计监控** - 实时监控Token使用情况和状态
 - **⚙️ 简单易用管理** - 交互式界面轻松管理Token增删改查
 - **🔧 向后兼容** - 完全兼容现有单Token配置
 
@@ -105,19 +105,19 @@ llmctl 支持为单个Provider配置多个API Token，实现负载均衡和故�
 
 ```bash
 # 进入Token管理界面
-ctl tokens
+ctl token
 
 # 或者指定Provider进行管理
-ctl tokens my-claude-provider
+ctl token my-claude-provider
 
 # 快速添加Token
-ctl tokens add
+ctl token add
 
 # 查看Token状态
-ctl tokens list
+ctl token list
 
 # 设置轮询策略
-ctl tokens strategy
+ctl token strategy
 ```
 
 ### 📈 轮询策略说明
@@ -133,7 +133,7 @@ ctl tokens strategy
 
 ```bash
 # 1. 为现有Provider添加多个Token
-ctl tokens my-claude-provider
+ctl token my-claude-provider
 # 选择 "添加Token" -> 输入Token和配置
 
 # 2. 设置加权轮询策略
@@ -151,13 +151,13 @@ ctl tokens my-claude-provider
 
 ```bash
 # 查看详细统计信息
-ctl tokens stats
+ctl token stats
 
 # 重置错误计数
-ctl tokens reset
+ctl token reset
 
 # 编辑Token配置
-ctl tokens edit
+ctl token edit
 ```
 
 ### 🎯 使用场景

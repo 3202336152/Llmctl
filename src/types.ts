@@ -36,7 +36,6 @@ export const ProviderSchema = z.object({
         enabled: z.boolean().optional().default(true),
         alias: z.string().optional(),
         lastUsed: z.number().optional(),
-        healthy: z.boolean().optional().default(true),
       }),
     )
     .optional(),

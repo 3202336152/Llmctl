@@ -5,68 +5,6 @@ import { EnvExporter } from "./env.js";
 import { prompt } from "./inquirer.js";
 import type { Provider } from "../types.js";
 
-// 平台指导信息常量
-const PLATFORM_INSTRUCTIONS = {
-  bash: {
-    title: "Bash/Zsh",
-    methods: [
-      {
-        name: "直接执行",
-        command: "llmctl export | source /dev/stdin",
-      },
-      {
-        name: "或者先生成脚本文件",
-        command: "llmctl export > llmctl-env.sh\n   source llmctl-env.sh",
-      },
-    ],
-    note: "注意：环境变量仅在当前会话中有效，如需永久设置请将命令添加到 ~/.bashrc 或 ~/.zshrc 文件中。",
-  },
-  powershell: {
-    title: "PowerShell",
-    methods: [
-      {
-        name: "直接执行",
-        command: "llmctl export --format powershell | Invoke-Expression",
-      },
-      {
-        name: "或者先生成脚本文件",
-        command:
-          "llmctl export --format powershell > llmctl-env.ps1\n   . ./llmctl-env.ps1",
-      },
-    ],
-    note: "注意：环境变量仅在当前会话中有效，如需永久设置请将命令添加到 $PROFILE 文件中。",
-  },
-  cmd: {
-    title: "CMD",
-    methods: [
-      {
-        name: "一键执行（推荐）",
-        command: "llmctl export --format cmd > env.bat && call env.bat",
-      },
-      {
-        name: "分步执行",
-        command:
-          "llmctl export --format cmd > llmctl-env.bat\n   call llmctl-env.bat",
-      },
-    ],
-    note: '注意：环境变量仅在当前会话中有效，如需永久设置请通过"系统属性"->"环境变量"进行设置。',
-  },
-  json: {
-    title: "JSON 格式",
-    methods: [
-      {
-        name: "导出到文件",
-        command: "llmctl export --format json > environment.json",
-      },
-      {
-        name: "直接输出",
-        command: "llmctl export --format json",
-      },
-    ],
-    note: "注意：JSON 格式主要用于程序处理，可被其他工具解析和使用。",
-  },
-} as const;
-
 interface ProviderSetupOptions {
   askForCliTool?: boolean;
   autoLaunchCli?: boolean;
@@ -121,52 +59,6 @@ async function applyEnvironmentVariables(
     );
     return false;
   }
-}
-
-/**
- * 显示手动设置指导
- */
-async function showManualSetupInstructions(
-  provider: Provider,
-  envVars: Record<string, string>,
-): Promise<void> {
-  const format = EnvExporter.detectShellFormat();
-  const commands = EnvExporter.generateExportCommand(envVars, { format });
-  const variableCount = Object.keys(envVars).length;
-  const platformInfo = PLATFORM_INSTRUCTIONS[format];
-
-  console.log(
-    chalk.blue(
-      `\n📋 已为 ${provider.name} 生成 ${variableCount} 个环境变量的设置命令：`,
-    ),
-  );
-
-  console.log(chalk.bold(`\n在 ${platformInfo.title} 中使用以下方法：\n`));
-
-  // 生成方法列表
-  platformInfo.methods.forEach((method, index) => {
-    const methodCommands = method.command
-      .split("\n")
-      .map((cmd) => `   ${chalk.cyan(cmd)}`)
-      .join("\n");
-    console.log(`${index + 1}. ${chalk.yellow(method.name)}：`);
-    console.log(methodCommands);
-    console.log();
-  });
-
-  // 生成手动设置命令
-  const manualCommands = commands
-    .split("\n")
-    .map((cmd) => `   ${chalk.cyan(cmd)}`)
-    .join("\n");
-
-  console.log(
-    `${platformInfo.methods.length + 1}. ${chalk.yellow("手动设置")}：`,
-  );
-  console.log(manualCommands);
-  console.log();
-
-  console.log(chalk.gray(platformInfo.note));
 }
 
 /**
@@ -266,7 +158,7 @@ export async function setupProviderEnvironment(
   provider: Provider,
   options: ProviderSetupOptions = {},
 ): Promise<void> {
-  const { askForCliTool = true, autoLaunchCli = false } = options;
+  const { askForCliTool = true } = options;
 
   // 获取环境变量
   const envVars = providerRegistry.getProviderEnvVars(provider);
