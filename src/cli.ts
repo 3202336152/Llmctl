@@ -18,6 +18,7 @@ import {
   createRemoveCommand,
   createValidateCommand,
 } from "./commands/index.js";
+import { createTokensCommand } from "./commands/tokens.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -217,6 +218,7 @@ async function main() {
   program.addCommand(createExportCommand());
   program.addCommand(createRemoveCommand());
   program.addCommand(createValidateCommand());
+  program.addCommand(createTokensCommand()); // 新增tokens命令
 
   // 添加全局选项
   program
@@ -245,6 +247,9 @@ async function main() {
     console.log(chalk.bold("示例:"));
     console.log("  $ ctl add                    # 添加新的 Provider");
     console.log("  $ ctl use anthropic          # 选择 Provider");
+    console.log("  $ ctl tokens                 # 管理Token (支持多Token轮询)");
+    console.log("  $ ctl tokens add             # 快速添加Token");
+    console.log("  $ ctl tokens list            # 查看Token列表");
     console.log("  $ ctl export                 # 导出环境变量");
     console.log("  $ ctl export       # 在 bash 中应用环境变量");
     console.log("");

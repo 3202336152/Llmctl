@@ -7,6 +7,7 @@ export {
   providerRegistry,
 } from "./providers/index.js";
 export { EnvExporter } from "./utils/env.js";
+export { TokenRotationManager } from "./utils/token-rotation.js";
 
 // 类型导出
 export type {
@@ -22,6 +23,8 @@ export type {
   SystemInfo,
   ErrorContext,
   CliCommandName,
+  TokenConfig,
+  TokenStrategy,
 } from "./types.js";
 
 // 常量导出

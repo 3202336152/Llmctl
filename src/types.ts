@@ -1,12 +1,56 @@
 import { z } from "zod";
 
+// Token配置类型
+export interface TokenConfig {
+  value: string;
+  weight?: number; // 权重，用于加权轮询
+  enabled?: boolean; // 是否启用
+  alias?: string; // 别名，方便识别
+  lastUsed?: number; // 最后使用时间戳
+  healthy?: boolean; // 健康状态，用户手动设置
+}
+
+// Token轮询策略类型
+export type TokenStrategy =
+  | "round-robin"
+  | "weighted"
+  | "random"
+  | "least-used";
+
 export const ProviderSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
   type: z.string(), // 添加类型字段，表示基于哪个模板
   baseUrl: z.string().url().optional(),
+
+  // 兼容原有单token配置
   apiKey: z.string().optional(),
+
+  // 新增多token配置
+  tokens: z
+    .array(
+      z.object({
+        value: z.string(),
+        weight: z.number().min(1).optional().default(1),
+        enabled: z.boolean().optional().default(true),
+        alias: z.string().optional(),
+        lastUsed: z.number().optional(),
+        healthy: z.boolean().optional().default(true),
+      }),
+    )
+    .optional(),
+
+  // Token轮询策略配置
+  tokenStrategy: z
+    .object({
+      type: z
+        .enum(["round-robin", "weighted", "random", "least-used"])
+        .default("round-robin"),
+      fallbackOnError: z.boolean().optional().default(true),
+    })
+    .optional(),
+
   modelName: z.string().optional(),
   maxTokens: z.number().min(1).optional(),
   temperature: z.number().min(0).max(2).optional(),

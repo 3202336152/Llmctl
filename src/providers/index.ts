@@ -1,5 +1,6 @@
 import type { Provider, ProviderTemplate, PromptConfig } from "../types.js";
 import { SupportedProviders } from "../types.js";
+import { TokenRotationManager } from "../utils/token-rotation.js";
 
 export abstract class BaseProvider {
   abstract getTemplate(): ProviderTemplate;
@@ -77,7 +78,11 @@ export class AnthropicProvider extends BaseProvider {
   validateConfig(provider: Provider): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    if (!provider.envVars?.ANTHROPIC_AUTH_TOKEN) {
+    // 检查是否有可用的Token
+    const hasApiKey = provider.apiKey || provider.envVars?.ANTHROPIC_AUTH_TOKEN;
+    const hasTokens = provider.tokens && provider.tokens.length > 0;
+
+    if (!hasApiKey && !hasTokens) {
       errors.push("缺少 API Token");
     }
 
@@ -94,8 +99,10 @@ export class AnthropicProvider extends BaseProvider {
   getEnvVars(provider: Provider): Record<string, string> {
     const envVars: Record<string, string> = {};
 
-    if (provider.envVars?.ANTHROPIC_AUTH_TOKEN) {
-      envVars.ANTHROPIC_AUTH_TOKEN = provider.envVars.ANTHROPIC_AUTH_TOKEN;
+    // 获取当前应该使用的Token
+    const currentToken = this.getCurrentToken(provider);
+    if (currentToken) {
+      envVars.ANTHROPIC_AUTH_TOKEN = currentToken;
     }
 
     if (provider.baseUrl) {
@@ -108,6 +115,35 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     return envVars;
+  }
+
+  // 新增：获取当前应该使用的token
+  private getCurrentToken(provider: Provider): string | null {
+    // 如果有多token配置，使用当前环境变量或配置中的token，保持一致性
+    if (provider.tokens && provider.tokens.length > 0) {
+      // 优先使用当前环境变量中的token（如果存在且有效）
+      const currentEnvToken =
+        provider.envVars?.ANTHROPIC_AUTH_TOKEN || provider.apiKey;
+      if (currentEnvToken) {
+        // 验证这个token是否在tokens列表中且已启用
+        const tokenConfig = provider.tokens.find(
+          (t) => t.value === currentEnvToken,
+        );
+        if (
+          tokenConfig &&
+          tokenConfig.enabled !== false &&
+          tokenConfig.healthy !== false
+        ) {
+          return currentEnvToken;
+        }
+      }
+
+      // 如果当前环境变量中的token无效，则使用轮询策略获取下一个
+      return TokenRotationManager.getNextToken(provider);
+    }
+
+    // 兼容单token配置
+    return provider.envVars?.ANTHROPIC_AUTH_TOKEN || provider.apiKey || null;
   }
 }
 

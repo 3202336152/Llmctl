@@ -2,10 +2,11 @@
 
 本指南详细介绍 ctl 工具的所有命令和使用方法。
 
-## 📖 目录
+## 📚 目录
 
 - [基础命令](#基础命令)
 - [Provider 管理](#provider-管理)
+- [Token 管理](#token-管理)
 - [环境变量导出](#环境变量导出)
 - [配置验证](#配置验证)
 - [模板管理](#模板管理)
@@ -505,6 +506,275 @@ ctl template new
 - 需要通过编程方式注册到系统中
 - 模板 ID 只能包含小写字母、数字、连字符和下划线
 - 环境变量名称应使用大写字母、数字和下划线
+
+## Token 管理
+
+llmctl 支持为单个Provider配置多个API Token，实现负载均衡和故障切换。
+
+### `ctl tokens` - Token 管理主命令
+
+#### 进入交互式管理界面
+```bash
+ctl tokens                     # 选择 Provider 后进入管理界面
+ctl tokens my-claude-provider  # 直接管理指定 Provider 的 Token
+```
+
+**交互界面包含:**
+```
+🔧 Token管理 - 我的Claude配置
+
+📊 Token数量: 3/3 可用
+🔄 轮询策略: 加权轮询
+
+选择操作:
+❯ 📋 查看Token详情
+  ➕ 添加Token
+  ✏️  编辑Token
+  🗑️  删除Token
+  ⚙️  设置轮询策略
+  🔄 重置错误计数
+  📊 查看统计信息
+  🚪 退出
+```
+
+### `ctl tokens add` - 添加 Token
+
+#### 快速添加模式
+```bash
+ctl tokens add                     # 选择 Provider 后添加
+ctl tokens my-claude-provider add  # 为指定 Provider 添加
+```
+
+**配置示例:**
+```
+➕ 添加新Token
+
+? 请输入Token值: [隐藏输入]
+? Token别名 (可选，方便识别): backup-token
+? 权重 (1-10，用于加权轮询): 2
+? 是否启用该Token? Yes
+
+✅ Token添加成功 (backup-token)
+```
+
+**配置项说明:**
+- **Token值**: API Token字符串（必填，输入时会被掩码）
+- **别名**: Token的友好名称（可选，建议设置便于管理）
+- **权重**: 1-10的数字，用于加权轮询策略，权重越高使用频率越高
+- **启用状态**: 是否启用此Token，可随时修改
+
+### `ctl tokens list` - 查看 Token 列表
+
+#### 显示 Token 状态
+```bash
+ctl tokens list                     # 选择 Provider 后查看
+ctl tokens my-claude-provider list  # 查看指定 Provider 的 Token
+```
+
+**输出示例:**
+```
+📋 Token列表
+
+1. main-token
+   Token: sk-ant-01...
+   权重: 3 | 状态: [正常]
+   错误次数: 0 | 最后使用: 2024-01-15 14:32:10
+
+2. backup-token
+   Token: sk-ant-02...
+   权重: 2 | 状态: [正常]
+   错误次数: 1 | 最后使用: 2024-01-15 13:45:22
+
+3. test-token
+   Token: sk-ant-03...
+   权重: 1 | 状态: [已禁用]
+   错误次数: 0 | 最后使用: 从未使用
+```
+
+**状态说明:**
+- **[正常]** - Token健康可用
+- **[已禁用]** - 手动禁用的Token
+- **[错误过多]** - 错误次数超过阈值（默认3次）被暂时禁用
+
+### `ctl tokens strategy` - 设置轮询策略
+
+#### 配置轮询策略
+```bash
+ctl tokens strategy                     # 选择 Provider 后设置
+ctl tokens my-claude-provider strategy  # 为指定 Provider 设置策略
+```
+
+**配置示例:**
+```
+? 选择轮询策略:
+❯ 🔄 轮询 (Round Robin) - 依次使用每个Token
+  ⚖️  加权轮询 (Weighted) - 按权重分配使用频率
+  🎲 随机选择 (Random) - 随机选择Token
+  📊 最少使用 (Least Used) - 优先使用最少使用的Token
+
+? 最大重试次数 (1-10): 3
+? 错误Token冷却时间 (秒, 10-3600): 60
+
+✅ 轮询策略已设置为: 加权轮询
+```
+
+#### 轮询策略详解
+
+##### 🔄 轮询 (Round Robin)
+- **工作原理**: 按顺序循环使用每个Token
+- **适用场景**: 所有Token性能相同，需要均匀分配
+- **示例**: Token1 → Token2 → Token3 → Token1 → ...
+
+##### ⚖️ 加权轮询 (Weighted Round Robin)
+- **工作原理**: 根据权重精确分配请求比例
+- **适用场景**: Token有不同限额或性能等级
+- **示例**: 权重3:2:1的三个Token，按照3:2:1的比例分配请求
+- **算法**: 实现了真正的WRR算法，确保精确按比例分配
+
+##### 🎲 随机选择 (Random)
+- **工作原理**: 随机选择可用Token
+- **适用场景**: 简单场景，不需要精确控制
+- **特点**: 完全随机，长期使用趋于均匀
+
+##### 📊 最少使用 (Least Used)
+- **工作原理**: 优先选择最久未使用的Token
+- **适用场景**: 希望Token使用更加均匀
+- **特点**: 基于最后使用时间戳选择
+
+#### 策略参数配置
+
+**最大重试次数 (maxRetries)**
+- 范围: 1-10次
+- 默认: 3次
+- 说明: 当Token出错时，最多重试几次后切换到下一个Token
+
+**冷却时间 (cooldownDuration)**
+- 范围: 10-3600秒
+- 默认: 60秒
+- 说明: 错误Token被暂时禁用后，多长时间后可以重新尝试使用
+
+### Token 高级管理
+
+#### 编辑 Token
+在交互界面中选择"编辑Token":
+```
+? 选择要编辑的Token:
+❯ main-token (sk-ant-01...) - 权重:3
+  backup-token (sk-ant-02...) - 权重:2
+  test-token (sk-ant-03...) - 权重:1 [已禁用]
+
+? Token别名: main-token
+? 权重 (1-10): 5
+? 是否启用该Token? Yes
+
+✅ Token更新成功
+```
+
+#### 删除 Token
+```
+? 选择要删除的Token:
+  main-token (sk-ant-01...)
+❯ backup-token (sk-ant-02...)
+
+? 确认删除Token "backup-token"? Yes
+
+✅ Token删除成功
+```
+
+**特殊情况:**
+- 删除最后一个Token时会提示回到单Token模式
+- 删除前会显示确认提示防止误操作
+
+#### 重置错误计数
+```bash
+# 在交互界面中选择"重置错误计数"
+# 重置所有Token的错误计数为0，恢复被禁用的Token
+```
+
+#### 查看统计信息
+```
+📊 Token统计信息
+
+总Token数: 3
+可用Token: 2
+健康Token: 2
+轮询策略: 加权轮询
+
+Token详情:
+1. 🟢 ✅ main-token
+   权重: 3 | 错误: 0 | 最后使用: 2024-01-15 14:32:10
+2. 🟢 ✅ backup-token
+   权重: 2 | 错误: 1 | 最后使用: 2024-01-15 13:45:22
+3. 🔴 ❌ test-token
+   权重: 1 | 错误: 0 | 最后使用: 从未使用
+```
+
+**图标说明:**
+- 🟢/🔴: Token健康状态（绿色健康/红色异常）
+- ✅/❌: Token启用状态（启用/禁用）
+
+### Token 故障处理
+
+#### 自动故障切换
+```
+Token main-token... 发生错误，错误次数: 1
+自动切换到 backup-token...
+Token backup-token... 发生错误，错误次数: 1
+自动切换到 test-token...
+```
+
+#### 错误恢复机制
+- Token错误次数达到阈值（默认3次）后被暂时禁用
+- 经过冷却时间（默认60秒）后自动恢复可用状态
+- 可以手动重置错误计数立即恢复所有Token
+
+#### 健康状态监控
+系统会自动跟踪每个Token的:
+- 错误次数
+- 最后使用时间
+- 启用/禁用状态
+- 健康状态评估
+
+### 多Token配置最佳实践
+
+#### 1. Token分层管理
+```bash
+# 主Token - 高权重，日常使用
+main-token: 权重5, 别名"主要Token"
+
+# 备用Token - 中权重，故障切换
+backup-token: 权重3, 别名"备用Token"
+
+# 测试Token - 低权重，开发测试
+test-token: 权重1, 别名"测试Token"
+```
+
+#### 2. 权重配置建议
+- **生产环境**: 使用加权轮询，主Token权重较高
+- **开发环境**: 使用轮询或随机，平均分配
+- **测试环境**: 使用最少使用，确保所有Token都被测试
+
+#### 3. 监控和维护
+```bash
+# 定期检查Token状态
+ctl tokens list
+
+# 查看使用统计
+ctl tokens stats
+
+# 重置错误计数（必要时）
+ctl tokens reset
+```
+
+#### 4. 安全考虑
+- 为不同用途的Token设置清晰的别名
+- 定期轮换Token，删除旧的添加新的
+- 监控Token使用情况，及时发现异常
+
+#### 5. 故障预案
+- 确保至少配置2个以上Token
+- 设置合理的重试次数和冷却时间
+- 定期验证所有Token的有效性
 
 ## 高级使用
 
