@@ -216,12 +216,6 @@ async function launchCliTool(provider: Provider): Promise<void> {
       };
     });
 
-  console.log(
-    chalk.blue(
-      `\n🚀 已为 "${provider.name}" 设置好环境变量，现在可以选择CLI工具:`,
-    ),
-  );
-
   // 询问用户要启动哪个CLI工具
   const { selectedCli } = await prompt([
     {
@@ -292,21 +286,7 @@ export async function setupProviderEnvironment(
     return;
   }
 
-  // 询问是否启动CLI工具
+  // 直接启动CLI工具，不再询问
   console.log(); // 添加空行
-  const { shouldLaunchCli } = await prompt([
-    {
-      type: "confirm",
-      name: "shouldLaunchCli",
-      message: "是否要启动CLI工具？",
-      default: autoLaunchCli,
-    },
-  ]);
-
-  if (shouldLaunchCli) {
-    await launchCliTool(provider);
-  } else {
-    // 提供手动设置指导
-    await showManualSetupInstructions(provider, envVars);
-  }
+  await launchCliTool(provider);
 }

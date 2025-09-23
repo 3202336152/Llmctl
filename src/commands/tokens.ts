@@ -65,8 +65,9 @@ async function selectProvider(): Promise<string | null> {
       name: "providerId",
       message: "选择要管理Token的Provider:",
       choices,
-      pageSize: Math.min(choices.length, 8), // 动态设置页面大小
+      pageSize: choices.length, // 显示所有选项，避免分页
       loop: false,
+      prefix: "", // 移除前缀减少闪烁
     },
   ]);
 
@@ -78,14 +79,8 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
   let lastSelectedIndex = 0; // 跟踪上次选择的菜单位置
 
   while (true) {
-    // 使用更兼容的清屏方式，避免黑影问题
-    if (process.platform === "win32") {
-      // Windows 使用特定的清屏序列
-      process.stdout.write("\x1B[2J\x1B[0f");
-    } else {
-      // Unix/Linux/macOS 使用标准清屏
-      process.stdout.write("\x1B[2J\x1B[3J\x1B[H");
-    }
+    // 使用更温和的清屏方式，减少闪烁
+    console.clear();
     console.log(chalk.bold.blue(`🔧 Token管理 - ${provider.name}\n`));
 
     // 显示当前Token状态
@@ -108,8 +103,9 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
         message: "选择操作:",
         choices: menuChoices,
         default: menuChoices[lastSelectedIndex]?.value, // 保持上次选择的位置
-        pageSize: Math.min(menuChoices.length, 10), // 动态设置页面大小
+        pageSize: menuChoices.length, // 显示所有选项，避免分页
         loop: false, // 禁用循环选择
+        prefix: "", // 移除前缀减少闪烁
       },
     ]);
 
@@ -862,7 +858,7 @@ async function handleBatchTokenOperation(
     return;
   }
 
-  // 确认操作
+  // 直接执行操作
   const selectedTokens = actualSelectedIndices.map(
     (index: number) => targetTokens[index],
   );
@@ -872,20 +868,6 @@ async function handleBatchTokenOperation(
       `${index + 1}. ${token.alias || `Token-${index + 1}`} (${token.value.slice(0, 8)}...)`,
     );
   });
-
-  const { confirmBatch } = await prompt([
-    {
-      type: "confirm",
-      name: "confirmBatch",
-      message: `确认${actionText} ${selectedTokens.length} 个Token?`,
-      default: false,
-    },
-  ]);
-
-  if (!confirmBatch) {
-    console.log(chalk.yellow("已取消操作"));
-    return;
-  }
 
   // 执行批量操作
   let successCount = 0;
