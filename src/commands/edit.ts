@@ -54,15 +54,6 @@ export function createEditCommand(): Command {
             `✅ 成功修改 Provider: ${updatedProvider.name || targetProvider.name}`,
           ),
         );
-
-        // 如果修改的是当前活跃的 Provider，提示用户手动更新环境变量
-        const currentProvider = configManager.getActiveProvider();
-        if (currentProvider && currentProvider.id === targetProvider.id) {
-          console.log(
-            chalk.blue("💡 这是当前使用的 Provider，建议重新导出环境变量："),
-          );
-          console.log(chalk.cyan("ctl export"));
-        }
       } catch (error) {
         console.error(
           chalk.red("❌ 修改 Provider 失败:"),
@@ -94,6 +85,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
   const currentApiKey = provider.envVars?.ANTHROPIC_AUTH_TOKEN || "";
   const currentModel =
     provider.envVars?.ANTHROPIC_MODEL || provider.modelName || "";
+  const currentMaxOutputTokens = provider.maxOutputTokens || "";
 
   const editableFields = [
     { name: "配置名称", key: "name", value: provider.name },
@@ -101,6 +93,11 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
     { name: "API地址", key: "baseUrl", value: provider.baseUrl || "" },
     { name: "API密钥", key: "apiKey", value: currentApiKey, sensitive: true },
     { name: "模型名称", key: "modelName", value: currentModel },
+    {
+      name: "最大输出Token数",
+      key: "maxOutputTokens",
+      value: currentMaxOutputTokens,
+    },
   ];
 
   // 显示当前配置
@@ -171,7 +168,7 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
         {
           type: "input",
           name: "newModelName",
-          message: "请输入新的模型名称 (ANTHROPIC_MODEL，仅中转时需要):",
+          message: "请输入新的模型名称 (ANTHROPIC_MODEL，可选，输入'-'清空):",
           default: field.value || "",
           validate: (_input: string) => {
             // 允许空值，因为不是必需的
@@ -180,18 +177,68 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
         },
       ]);
 
+      // 处理特殊输入："-" 表示清空
+      const finalModelName =
+        String(newModelName) === "-" ? "" : String(newModelName);
+
       // 更新模型名称到 Provider 和环境变量
-      updates.modelName = newModelName;
+      updates.modelName = finalModelName;
       // 只有当模型名称不为空时才设置 ANTHROPIC_MODEL 环境变量
-      if (newModelName && newModelName.trim() !== "") {
+      if (finalModelName && finalModelName.trim() !== "") {
         updates.envVars = {
           ...provider.envVars,
-          ANTHROPIC_MODEL: newModelName,
+          ANTHROPIC_MODEL: finalModelName,
         };
       } else {
         // 如果清空模型名称，从环境变量中移除 ANTHROPIC_MODEL
         const updatedEnvVars = { ...provider.envVars };
         delete updatedEnvVars.ANTHROPIC_MODEL;
+        updates.envVars = updatedEnvVars;
+      }
+    } else if (fieldKey === "maxOutputTokens") {
+      const { newMaxOutputTokens } = await prompt([
+        {
+          type: "input",
+          name: "newMaxOutputTokens",
+          message:
+            "请输入新的最大输出Token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS，可选，输入'-'清空):",
+          default: field.value || "",
+          validate: (input: string) => {
+            // 确保input是字符串类型
+            const inputStr = String(input);
+            // 允许特殊输入"-"表示清空
+            if (inputStr === "-") {
+              return true;
+            }
+            if (inputStr && inputStr.trim() !== "") {
+              const num = parseInt(inputStr);
+              if (isNaN(num) || num <= 0) {
+                return "最大输出Token数必须是大于0的整数";
+              }
+            }
+            return true;
+          },
+        },
+      ]);
+
+      // 处理特殊输入："-" 表示清空
+      const finalMaxOutputTokens =
+        String(newMaxOutputTokens) === "-" ? "" : String(newMaxOutputTokens);
+
+      // 更新最大输出Token数到 Provider 和环境变量
+      updates.maxOutputTokens = finalMaxOutputTokens
+        ? parseInt(finalMaxOutputTokens)
+        : undefined;
+      // 只有当最大输出Token数不为空时才设置 CLAUDE_CODE_MAX_OUTPUT_TOKENS 环境变量
+      if (finalMaxOutputTokens && finalMaxOutputTokens.trim() !== "") {
+        updates.envVars = {
+          ...provider.envVars,
+          CLAUDE_CODE_MAX_OUTPUT_TOKENS: finalMaxOutputTokens,
+        };
+      } else {
+        // 如果清空最大输出Token数，从环境变量中移除 CLAUDE_CODE_MAX_OUTPUT_TOKENS
+        const updatedEnvVars = { ...provider.envVars };
+        delete updatedEnvVars.CLAUDE_CODE_MAX_OUTPUT_TOKENS;
         updates.envVars = updatedEnvVars;
       }
     } else {
@@ -215,9 +262,9 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
       ]);
 
       if (fieldKey === "description") {
-        (updates as any)[fieldKey] = newValue || undefined;
+        updates[fieldKey as keyof typeof updates] = newValue || undefined;
       } else {
-        (updates as any)[fieldKey] = newValue;
+        updates[fieldKey as keyof typeof updates] = newValue;
       }
     }
   }

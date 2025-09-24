@@ -52,6 +52,7 @@ export const ProviderSchema = z.object({
 
   modelName: z.string().optional(),
   maxTokens: z.number().min(1).optional(),
+  maxOutputTokens: z.number().min(1).optional(),
   temperature: z.number().min(0).max(2).optional(),
   extraHeaders: z.record(z.string()).optional(),
   envVars: z.record(z.string()),

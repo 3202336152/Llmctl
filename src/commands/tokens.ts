@@ -66,7 +66,7 @@ async function selectProvider(): Promise<string | null> {
       message: "选择要管理Token的Provider:",
       choices,
       pageSize: choices.length, // 显示所有选项，避免分页
-      loop: false,
+      loop: true,
       prefix: "", // 移除前缀减少闪烁
     },
   ]);
@@ -147,7 +147,7 @@ async function tokenManagementMenu(provider: Provider): Promise<void> {
         choices: menuChoices,
         default: menuChoices[lastSelectedIndex]?.value, // 保持上次选择的位置
         pageSize: menuChoices.length, // 显示所有选项，避免分页
-        loop: false, // 禁用循环选择
+        loop: true, // 启用循环选择
         prefix: "", // 移除前缀减少闪烁
       },
     ]);
@@ -336,7 +336,7 @@ async function editTokenInteractive(provider: Provider): Promise<void> {
       message: "选择要编辑的Token:",
       choices,
       pageSize: Math.min(choices.length, 8), // 动态设置页面大小
-      loop: false,
+      loop: true,
     },
   ]);
 
@@ -460,7 +460,7 @@ async function deleteTokenInteractive(provider: Provider): Promise<void> {
       message: "选择要删除的Token:",
       choices,
       pageSize: Math.min(choices.length, 8), // 动态设置页面大小
-      loop: false,
+      loop: true,
     },
   ]);
 
@@ -510,7 +510,7 @@ async function setStrategyInteractive(provider: Provider): Promise<void> {
       ],
       default: provider.tokenStrategy?.type || "round-robin",
       pageSize: 5, // 更新页面大小（5个选项）
-      loop: false,
+      loop: true,
     },
   ]);
 
@@ -716,7 +716,7 @@ async function handleBatchTokenOperation(
       message: `选择要${actionText}的Token (空格选择，回车确认):`,
       choices,
       pageSize: Math.min(choices.length, 10),
-      loop: false,
+      loop: true,
     },
   ]);
 
@@ -901,7 +901,7 @@ async function batchOperationsMenu(provider: Provider): Promise<void> {
       message: "选择批量操作:",
       choices: menuChoices,
       pageSize: menuChoices.length,
-      loop: false,
+      loop: true,
       prefix: "",
     },
   ]);
@@ -934,7 +934,7 @@ async function advancedSettingsMenu(provider: Provider): Promise<void> {
       message: "选择高级设置:",
       choices: menuChoices,
       pageSize: menuChoices.length,
-      loop: false,
+      loop: true,
       prefix: "",
     },
   ]);

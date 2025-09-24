@@ -61,8 +61,9 @@ ctl add
 4. 确认或自定义 Provider ID
 5. 输入 Base URL
 6. 输入 API Token
-7. 输入模型名称 (ANTHROPIC_MODEL，仅中转时需要)
-8. 选择是否立即使用该 Provider (会自动设置环境变量)
+7. 输入模型名称 (ANTHROPIC_MODEL，可选)
+8. 输入最大输出Token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS，可选)
+9. 选择是否立即使用该 Provider (会自动设置环境变量)
 
 **示例对话：**
 ```
@@ -73,7 +74,8 @@ ctl add
 🆔 使用 Provider ID: wo-de-claude-pei-zhi
 ? 请输入 API URL: https://api.lycheeshare.com
 ? 请输入 API Token: [隐藏输入]
-? 请输入模型名称 (ANTHROPIC_MODEL，仅中转时需要): claude-sonnet-4-20250514
+? 请输入模型名称 (ANTHROPIC_MODEL，可选): claude-sonnet-4-20250514
+? 请输入最大输出Token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS，可选): 8000
 ✅ 成功添加 Provider: 我的Claude配置
 ? 是否立即选择此 Provider 作为当前使用的 Provider? Yes
 🎯 已选择 "我的Claude配置" 作为当前 Provider
@@ -82,8 +84,9 @@ ctl add
   ANTHROPIC_AUTH_TOKEN=********...
   ANTHROPIC_BASE_URL=https://api.lycheeshare.com
   ANTHROPIC_MODEL=claude-sonnet-4-20250514
+  CLAUDE_CODE_MAX_OUTPUT_TOKENS=8000
 
-✅ 已自动设置 3 个环境变量
+✅ 已自动设置 4 个环境变量
 ```
 
 #### 使用特定模板
@@ -212,8 +215,6 @@ ctl edit
 ? 请输入新的 API地址: https://api.newprovider.com
 ? 请输入新的 API密钥: [隐藏输入]
 ✅ 成功修改 Provider: GLM-4.5
-💡 这是当前使用的 Provider，建议重新导出环境变量：
-ctl export
 ```
 
 #### 直接修改指定 Provider
@@ -227,7 +228,8 @@ ctl update qwen
 - **配置描述** - Provider 描述信息
 - **API地址** - API 接口地址
 - **API密钥** - API 认证密钥
-- **模型名称** - ANTHROPIC_MODEL 环境变量，仅在使用中转服务时需要配置
+- **模型名称** - ANTHROPIC_MODEL 环境变量（可选）
+- **最大输出Token数** - CLAUDE_CODE_MAX_OUTPUT_TOKENS 环境变量（可选）
 
 **注意事项：**
 - 修改会自动验证配置有效性
@@ -416,7 +418,7 @@ ctl templates ls
 1. LLM API 配置
    ID: anthropic
    描述: 配置大语言模型 API描述 (支持 Claude、GLM、Qwen 等)
-   环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL
+   环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL, CLAUDE_CODE_MAX_OUTPUT_TOKENS
 ```
 
 #### JSON 格式输出
@@ -441,7 +443,8 @@ ID: anthropic
 环境变量:
   ANTHROPIC_AUTH_TOKEN: (用户配置)
   ANTHROPIC_BASE_URL: https://api.lycheeshare.com
-  ANTHROPIC_MODEL: (可选，仅中转时需要)
+  ANTHROPIC_MODEL: (可选)
+  CLAUDE_CODE_MAX_OUTPUT_TOKENS: (可选)
 
 默认值:
   baseUrl: https://api.lycheeshare.com

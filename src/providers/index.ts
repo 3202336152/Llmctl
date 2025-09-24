@@ -29,6 +29,7 @@ export class AnthropicProvider extends BaseProvider {
         ANTHROPIC_AUTH_TOKEN: "",
         ANTHROPIC_BASE_URL: "https://api.lycheeshare.com",
         ANTHROPIC_MODEL: "",
+        CLAUDE_CODE_MAX_OUTPUT_TOKENS: "",
       },
       defaultValues: {
         baseUrl: "https://api.lycheeshare.com",
@@ -63,11 +64,27 @@ export class AnthropicProvider extends BaseProvider {
         }),
         this.createPrompt({
           name: "modelName",
-          message: "请输入模型名称 (ANTHROPIC_MODEL，仅中转时需要):",
+          message: "请输入模型名称 (ANTHROPIC_MODEL，可选):",
           default: "",
           required: false,
           validate: (_input: string) => {
             // 允许空值，因为不是必需的
+            return true;
+          },
+        }),
+        this.createPrompt({
+          name: "maxOutputTokens",
+          message:
+            "请输入最大输出Token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS，可选):",
+          default: "",
+          required: false,
+          validate: (input: string) => {
+            if (input && input.trim() !== "") {
+              const num = parseInt(input);
+              if (isNaN(num) || num <= 0) {
+                return "最大输出Token数必须是大于0的整数";
+              }
+            }
             return true;
           },
         }),
@@ -112,6 +129,12 @@ export class AnthropicProvider extends BaseProvider {
     // 只有当模型名称不为空时才导出 ANTHROPIC_MODEL
     if (provider.modelName && provider.modelName.trim() !== "") {
       envVars.ANTHROPIC_MODEL = provider.modelName;
+    }
+
+    // 只有当最大输出Token数不为空时才导出 CLAUDE_CODE_MAX_OUTPUT_TOKENS
+    if (provider.maxOutputTokens && provider.maxOutputTokens > 0) {
+      envVars.CLAUDE_CODE_MAX_OUTPUT_TOKENS =
+        provider.maxOutputTokens.toString();
     }
 
     return envVars;

@@ -255,6 +255,10 @@ async function createProviderFromTemplate(
     provider.maxTokens = parseInt(answers.maxTokens);
   }
 
+  if (answers.maxOutputTokens) {
+    provider.maxOutputTokens = parseInt(answers.maxOutputTokens);
+  }
+
   if (answers.temperature !== undefined) {
     provider.temperature = parseFloat(answers.temperature);
   }
