@@ -108,6 +108,12 @@ async function launchCliTool(provider: Provider): Promise<void> {
       };
     });
 
+  // 添加取消选项
+  choices.push({
+    name: chalk.red("返回"),
+    value: "__cancel__",
+  });
+
   // 询问用户要启动哪个CLI工具
   const { selectedCli } = await prompt([
     {
@@ -115,9 +121,15 @@ async function launchCliTool(provider: Provider): Promise<void> {
       name: "selectedCli",
       message: "请选择要启动的CLI工具:",
       choices,
-      pageSize: 8,
+      pageSize: Math.min(choices.length, 10),
     },
   ]);
+
+  // 检查是否选择了取消选项
+  if (selectedCli === "__cancel__") {
+    console.log(chalk.yellow("🚫 已取消启动CLI工具"));
+    return;
+  }
 
   await launchCliByName(selectedCli);
 }

@@ -96,19 +96,38 @@ function listAvailableProviders(): void {
 async function selectProviderInteractively(providers: any[]): Promise<string> {
   const activeProvider = configManager.getActiveProvider();
 
+  // 对Provider列表进行排序：当前使用的优先显示，其他按名称排序
+  const sortedProviders = [...providers].sort((a, b) => {
+    const aIsActive = activeProvider?.id === a.id;
+    const bIsActive = activeProvider?.id === b.id;
+
+    // 当前使用的Provider排在最前面
+    if (aIsActive && !bIsActive) return -1;
+    if (!aIsActive && bIsActive) return 1;
+
+    // 其他Provider按名称排序
+    return a.name.localeCompare(b.name, 'zh-CN');
+  });
+
   // 创建Provider选择列表
-  const choices = providers.map((provider) => {
+  const choices = sortedProviders.map((provider) => {
     const isActive = activeProvider?.id === provider.id;
-    const name = isActive ? chalk.green(provider.name) : provider.name;
-    const status = isActive ? chalk.gray(" (当前使用)") : "";
+    const name = isActive ? chalk.green.bold(provider.name) : provider.name;
+    const status = isActive ? chalk.cyan(" (当前使用)") : "";
     const description = provider.description
-      ? ` - ${provider.description}`
+      ? ` - ${chalk.gray(provider.description)}`
       : "";
 
     return {
       name: `${name}${status}${description}`,
       value: provider.id,
     };
+  });
+
+  // 添加取消选项
+  choices.push({
+    name: chalk.red("返回"),
+    value: "__cancel__",
   });
 
   const { selectedProviderId } = await prompt([
@@ -118,8 +137,15 @@ async function selectProviderInteractively(providers: any[]): Promise<string> {
       message: "请选择要使用的 LLM Provider:",
       choices,
       pageSize: 10,
+      default: activeProvider?.id, // 默认选中当前使用的Provider
     },
   ]);
+
+  // 检查是否选择了取消选项
+  if (selectedProviderId === "__cancel__") {
+    console.log(chalk.yellow("🚫 已取消操作"));
+    process.exit(0);
+  }
 
   return selectedProviderId;
 }
