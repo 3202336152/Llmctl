@@ -110,7 +110,7 @@ export function createSessionsCommand(): Command {
         console.log(chalk.blue("💡 使用提示:"));
         console.log(
           chalk.gray("  • 使用") +
-            chalk.cyan(" ctl switch-token --sessions") +
+            chalk.cyan(" ctl switch-token") +
             chalk.gray(" 交互式选择Provider切换Token"),
         );
         console.log(
