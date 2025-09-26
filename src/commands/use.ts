@@ -2,6 +2,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import { configManager } from "../config.js";
 import { setupProviderEnvironment } from "../utils/provider-setup.js";
+import { SessionManager } from "../utils/session-manager.js";
 import { prompt } from "../utils/inquirer.js";
 
 export function createUseCommand(): Command {
@@ -60,6 +61,9 @@ export function createUseCommand(): Command {
           chalk.green(`✅ 已选择 "${selectedProvider.name}" 作为当前 Provider`),
         );
 
+        // 注册会话使用（在设置Provider后立即注册）
+        SessionManager.registerProviderUsage(selectedProvider);
+
         // 使用公共的 Provider 设置流程
         await setupProviderEnvironment(selectedProvider);
       } catch (error) {
@@ -106,7 +110,7 @@ async function selectProviderInteractively(providers: any[]): Promise<string> {
     if (!aIsActive && bIsActive) return 1;
 
     // 其他Provider按名称排序
-    return a.name.localeCompare(b.name, 'zh-CN');
+    return a.name.localeCompare(b.name, "zh-CN");
   });
 
   // 创建Provider选择列表

@@ -40,12 +40,22 @@ export function createEditCommand(): Command {
           }
           targetProvider = provider;
         } else {
-          targetProvider = await selectProviderToEdit(allProviders);
+          const selectedProvider = await selectProviderToEdit(allProviders);
+          if (!selectedProvider) {
+            console.log(chalk.yellow("🚫 已取消操作"));
+            return;
+          }
+          targetProvider = selectedProvider;
         }
 
         console.log(chalk.blue(`\n🔧 修改 Provider: ${targetProvider.name}\n`));
 
         const updatedProvider = await editProvider(targetProvider);
+
+        // 检查是否取消了修改
+        if (Object.keys(updatedProvider).length === 0) {
+          return;
+        }
 
         configManager.updateProvider(targetProvider.id, updatedProvider);
 
@@ -64,18 +74,30 @@ export function createEditCommand(): Command {
     });
 }
 
-async function selectProviderToEdit(providers: Provider[]): Promise<Provider> {
+async function selectProviderToEdit(
+  providers: Provider[],
+): Promise<Provider | null> {
   const { selectedProviderId } = await prompt([
     {
       type: "list",
       name: "selectedProviderId",
       message: "请选择要修改的 Provider:",
-      choices: providers.map((provider) => ({
-        name: `${provider.name} (${provider.id})${provider.description ? ` - ${provider.description}` : ""}`,
-        value: provider.id,
-      })),
+      choices: [
+        ...providers.map((provider) => ({
+          name: `${provider.name} (${provider.id})${provider.description ? ` - ${provider.description}` : ""}`,
+          value: provider.id,
+        })),
+        {
+          name: "返回",
+          value: "__cancel__",
+        },
+      ],
     },
   ]);
+
+  if (selectedProviderId === "__cancel__") {
+    return null;
+  }
 
   return providers.find((p) => p.id === selectedProviderId)!;
 }
@@ -114,19 +136,37 @@ async function editProvider(provider: Provider): Promise<Partial<Provider>> {
       type: "checkbox",
       name: "fieldsToEdit",
       message: "请选择要修改的字段:",
-      choices: editableFields.map((field) => ({
-        name: `${field.name} (当前: ${field.value || "(未设置)"})`,
-        value: field.key,
-        checked: false,
-      })),
+      choices: [
+        ...editableFields.map((field) => ({
+          name: `${field.name} (当前: ${field.value || "(未设置)"})`,
+          value: field.key,
+          checked: false,
+        })),
+        {
+          name: "返回",
+          value: "__cancel__",
+          checked: false,
+        },
+      ],
       validate: (choices: string[]) => {
         if (choices.length === 0) {
-          return "请至少选择一个要修改的字段";
+          return "请至少选择一个选项（或选择返回）";
+        }
+        if (choices.includes("__cancel__")) {
+          if (choices.length > 1) {
+            return "选择返回时不能同时选择其他字段";
+          }
         }
         return true;
       },
     },
   ]);
+
+  // 检查是否选择了返回
+  if (fieldsToEdit.includes("__cancel__")) {
+    console.log(chalk.yellow("🚫 已取消操作"));
+    return {};
+  }
 
   const updates: Partial<Provider> = {};
 

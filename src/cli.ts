@@ -17,6 +17,8 @@ import {
   createExportCommand,
   createRemoveCommand,
   createValidateCommand,
+  createSwitchTokenCommand,
+  createSessionsCommand,
 } from "./commands/index.js";
 import { createTokensCommand } from "./commands/tokens.js";
 
@@ -219,6 +221,8 @@ async function main() {
   program.addCommand(createRemoveCommand());
   program.addCommand(createValidateCommand());
   program.addCommand(createTokensCommand()); // 新增tokens命令
+  program.addCommand(createSwitchTokenCommand()); // 新增switch-token命令
+  program.addCommand(createSessionsCommand()); // 新增sessions命令
 
   // 添加全局选项
   program
@@ -247,9 +251,13 @@ async function main() {
     console.log(chalk.bold("示例:"));
     console.log("  $ ctl add                    # 添加新的 Provider");
     console.log("  $ ctl use anthropic          # 选择 Provider");
-    console.log("  $ ctl tokens                 # 管理Token (支持多Token轮询)");
-    console.log("  $ ctl tokens add             # 快速添加Token");
-    console.log("  $ ctl tokens list            # 查看Token列表");
+    console.log("  $ ctl token                 # 管理Token (支持多Token轮询)");
+    console.log("  $ ctl token add             # 快速添加Token");
+    console.log("  $ ctl token list            # 查看Token列表");
+    console.log(
+      "  $ ctl switch-token           # 快速切换Token (用于额度用完时紧急切换)",
+    );
+    console.log("  $ ctl sessions               # 查看活跃的CLI会话");
     console.log("  $ ctl export                 # 导出环境变量");
     console.log("  $ ctl export       # 在 bash 中应用环境变量");
     console.log("");

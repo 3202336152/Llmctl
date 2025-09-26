@@ -7,3 +7,5 @@ export { createCurrentCommand } from "./current.js";
 export { createExportCommand } from "./export.js";
 export { createRemoveCommand } from "./remove.js";
 export { createValidateCommand } from "./validate.js";
+export { createSwitchTokenCommand } from "./switch-token.js";
+export { createSessionsCommand } from "./sessions.js";

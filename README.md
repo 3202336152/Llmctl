@@ -75,6 +75,8 @@ qwen
 |------|------|------|
 | `ctl add` | 交互式添加 Provider，可选择立即使用并启动CLI工具 | `ctl add` |
 | `ctl use <id>` | 选择 Provider，自动设置环境变量，可选择启动CLI工具 | `ctl use my-claude` |
+| `ctl sessions` | 查看当前活跃的CLI会话 | `ctl sessions` |
+| `ctl switch-token` | 智能切换Token，支持多会话管理和自动重启 | `ctl switch-token` |
 | `ctl token` | Token管理 - 支持多Token轮询配置 | `ctl token` |
 | `ctl token add` | 快速添加Token到指定Provider | `ctl token add` |
 | `ctl token list` | 查看Token列表和状态 | `ctl token list` |
@@ -88,6 +90,74 @@ qwen
 | `ctl validate` | 验证配置 | `ctl validate` |
 
 更多详细命令说明请查看 [命令操作指南](COMMANDS.md)。
+
+## 🎯 智能Token切换功能
+
+llmctl 提供强大的Token切换功能，特别适用于当前Token达到使用限额时快速切换到其他可用Token，确保工作流程不中断。
+
+### ✨ 核心特性
+
+- **🔍 智能会话检测** - 自动识别当前运行的CLI会话
+- **🔄 一键Token切换** - 快速切换到下一个可用Token
+- **🖥️ 多会话管理** - 支持同时管理多个CLI窗口
+- **📁 目录恢复** - 自动保存并恢复工作目录
+- **🚀 自动重启** - 无缝重启CLI工具，新Token立即生效
+
+### 🚀 快速使用
+
+```bash
+# 智能Token切换（推荐）
+ctl switch-token
+
+# 系统会：
+# 1. 显示有活跃会话的Provider列表
+# 2. 让您选择要切换的Provider
+# 3. 自动切换到下一个可用Token
+# 4. 重启相关CLI会话，在正确目录中启动新窗口
+```
+
+### 📋 会话管理
+
+```bash
+# 查看当前活跃的CLI会话
+ctl sessions
+
+# 显示信息：
+# - Provider名称和类型
+# - 会话PID和运行时间
+# - 工作目录
+# - 最后活动时间
+```
+
+### 🎮 使用场景
+
+**场景1：Claude CLI遇到quota exceeded错误**
+```bash
+# 在Claude CLI中遇到额度限制时：
+# 1. 新开一个终端
+# 2. 执行 ctl switch-token
+# 3. 选择Claude Provider
+# 4. 系统自动切换Token并重启CLI
+# 5. 旧窗口可手动关闭，新窗口已在正确目录启动
+```
+
+**场景2：管理多个项目的CLI会话**
+```bash
+# 同时运行多个项目：
+# Project A: Claude CLI in /home/user/project-a
+# Project B: Claude CLI in /home/user/project-b
+
+# 当某个项目的Token需要切换时：
+ctl switch-token
+# 选择特定会话进行切换，不影响其他项目
+```
+
+### 💡 智能特性
+
+- **选择性重启**：可以选择重启特定会话或全部会话
+- **目录保护**：自动保存工作目录，重启后在相同目录启动
+- **用户友好**：提供清晰的操作提示和状态反馈
+- **安全可靠**：只终止进程，让用户手动关闭窗口，避免数据丢失
 
 ## 🔁 多Token轮询功能
 

@@ -6,6 +6,8 @@
 
 - [基础命令](#基础命令)
 - [Provider 管理](#provider-管理)
+- [会话管理](#会话管理)
+- [Token 切换](#token-切换)
 - [Token 管理](#token-管理)
 - [环境变量导出](#环境变量导出)
 - [配置验证](#配置验证)
@@ -295,6 +297,280 @@ ctl remove gong-zuo-yong-claude --force
 #### 删除所有 Providers (危险操作)
 ```bash
 ctl remove --all
+```
+
+## 会话管理
+
+llmctl 提供智能的CLI会话管理功能，自动跟踪和管理当前运行的CLI工具会话。
+
+### `ctl sessions` - 查看活跃会话
+
+#### 显示所有活跃会话
+```bash
+ctl sessions
+```
+
+**输出示例：**
+```
+📊 活跃的CLI会话:
+
+🔹 Claude (claude):
+   1. PID: 12345 | 运行: 25分钟 | 最后活动: 2分钟前
+      目录: /home/user/project-a
+      命令: ctl-use
+
+   2. PID: 12678 | 运行: 15分钟 | 最后活动: 1分钟前
+      目录: /home/user/project-b
+      命令: ctl-use
+
+🔹 GLM (glm):
+   1. PID: 12890 | 运行: 5分钟 | 最后活动: 30秒前
+      目录: /home/user/project-c
+      命令: ctl-use
+```
+
+**会话信息说明：**
+- **PID**: 进程标识符，用于唯一识别会话
+- **运行时间**: 会话启动到现在的时间
+- **最后活动**: 最后一次记录活动的时间
+- **目录**: CLI会话的工作目录（自动保存）
+- **命令**: 启动CLI的命令类型
+
+#### 无活跃会话时的输出
+```bash
+ctl sessions
+```
+
+**输出示例：**
+```
+📭 当前没有活跃的CLI会话
+
+💡 提示：
+  - 使用 ctl use 启动CLI工具后会自动注册会话
+  - 会话会在CLI进程结束时自动清理
+```
+
+### 会话自动管理
+
+#### 会话注册
+```bash
+# 当您使用 ctl use 选择Provider并启动CLI时
+ctl use my-claude-provider
+
+# 系统会：
+# 1. 自动注册会话信息
+# 2. 保存当前工作目录
+# 3. 记录Provider信息
+# 4. 跟踪进程PID
+```
+
+#### 会话清理
+- **自动清理**: 当CLI进程结束时，会话自动从列表中移除
+- **进程检测**: 系统会定期检测进程是否仍在运行
+- **非持久化**: 会话信息不会永久保存，重启系统后会自动清空
+
+## Token 切换
+
+llmctl 的Token切换功能专门为解决Token额度用完时的快速切换需求而设计，支持智能会话管理和无缝重启。
+
+### `ctl switch-token` - 智能Token切换
+
+#### 交互式切换（推荐）
+```bash
+ctl switch-token
+```
+
+**完整交互流程：**
+```
+📋 选择要切换Token的Provider (仅显示有活跃会话的):
+
+> Claude (8个Token) - 2个活跃会话
+  GLM (单Token) - 1个活跃会话
+  取消
+
+🔄 正在为 "Claude" 切换Token...
+✅ Token切换成功
+📍 当前Token: backup-token (sk-ant-...)
+
+🔍 检测到 2 个活跃的 Claude CLI会话
+⚠️  由于CLI工具会缓存Token，需要重启才能使用新Token
+
+📋 请选择要重启的会话:
+> 会话1: PID 12345 | 目录: /home/user/project-a | 运行: 25分钟
+  会话2: PID 12678 | 目录: /home/user/project-b | 运行: 15分钟
+  🔄 重启所有会话
+  ❌ 取消操作
+
+🔄 开始自动重启CLI进程...
+正在终止进程 12345...
+✅ 已终止进程 12345
+🚀 在新窗口启动CLI，工作目录: /home/user/project-a
+✅ 会话已重启，请查看新打开的CLI窗口
+💡 可以手动关闭原始窗口，新Token已在新窗口中生效
+
+🎉 Token切换完成！
+💡 新Token已在新窗口中生效，可以手动关闭原始窗口
+```
+
+#### 直接指定Provider切换
+```bash
+ctl switch-token claude-provider
+```
+
+**输出示例：**
+```
+🔄 正在为 "Claude Provider" 切换Token...
+✅ Token切换成功
+📍 当前Token: main-token (sk-ant-...)
+
+🔍 检测到 1 个活跃的 Claude CLI会话
+⚠️  由于CLI工具会缓存Token，需要重启才能使用新Token
+
+🔄 开始自动重启CLI进程...
+正在终止进程 12345...
+✅ 已终止进程 12345
+🚀 在新窗口启动CLI，工作目录: /home/user/project-a
+✅ 会话已重启，请查看新打开的CLI窗口
+💡 可以手动关闭原始窗口，新Token已在新窗口中生效
+```
+
+### Token切换核心特性
+
+#### 🔍 智能会话检测
+- **活跃会话过滤**: 只显示有正在运行CLI会话的Provider
+- **精确会话识别**: 通过PID准确识别每个CLI进程
+- **实时状态检测**: 自动过滤已结束的会话
+
+#### 📁 工作目录保护
+- **自动保存**: 在启动CLI时自动保存工作目录
+- **精确恢复**: 重启时在相同目录中启动新CLI
+- **多项目支持**: 支持在不同目录中运行多个CLI实例
+
+#### 🖥️ 多会话管理
+- **选择性重启**: 可以选择重启特定会话或所有会话
+- **并发支持**: 同时管理多个不同Provider的会话
+- **独立操作**: 各个会话之间互不影响
+
+#### 🚀 自动重启机制
+- **进程终止**: 优雅终止旧的CLI进程
+- **新窗口启动**: 在系统新窗口中启动CLI
+- **Token生效**: 新CLI自动使用切换后的Token
+- **用户友好**: 提供清晰的操作提示和状态反馈
+
+### 使用场景详解
+
+#### 场景1: 单会话Token切换
+```bash
+# 当Claude CLI遇到quota exceeded错误时
+# 1. 保持Claude CLI窗口不动，新开终端
+# 2. 执行Token切换
+ctl switch-token
+
+# 3. 选择Claude Provider（如果只有一个活跃会话会自动处理）
+# 4. 系统自动切换Token并重启CLI
+# 5. 新CLI窗口会在相同目录中启动
+# 6. 旧窗口可以手动关闭
+```
+
+#### 场景2: 多会话选择性切换
+```bash
+# 同时运行多个项目的Claude CLI：
+# - Project A: /home/user/project-a (PID: 12345)
+# - Project B: /home/user/project-b (PID: 12678)
+
+ctl switch-token
+
+# 选择Claude Provider后会显示：
+# > 会话1: PID 12345 | 目录: /home/user/project-a | 运行: 25分钟
+#   会话2: PID 12678 | 目录: /home/user/project-b | 运行: 15分钟
+#   🔄 重启所有会话
+#   ❌ 取消操作
+
+# 可以选择只重启Project A的会话，Project B不受影响
+```
+
+#### 场景3: 多Provider环境
+```bash
+# 同时使用Claude和GLM：
+ctl switch-token
+
+# 只显示有活跃会话的Provider：
+# > Claude (8个Token) - 2个活跃会话
+#   GLM (单Token) - 1个活跃会话
+
+# 可以分别为不同Provider切换Token，互不影响
+```
+
+### Token切换最佳实践
+
+#### 1. 预防性Token管理
+```bash
+# 定期检查Token状态，避免运行时中断
+ctl token list
+
+# 确保每个Provider都配置了多个Token
+ctl token add
+```
+
+#### 2. 会话状态监控
+```bash
+# 定期查看活跃会话
+ctl sessions
+
+# 及时清理无用的会话（通常会自动清理）
+```
+
+#### 3. 工作流集成
+```bash
+# 建议的错误处理工作流：
+# 1. Claude CLI报quota exceeded
+# 2. Ctrl+N 或 Cmd+T 新开终端标签
+# 3. ctl switch-token
+# 4. 选择对应Provider和会话
+# 5. 等待新窗口启动
+# 6. 关闭旧窗口，继续工作
+```
+
+#### 4. 团队协作
+- **统一Token管理**: 团队成员使用相同的Provider配置结构
+- **会话隔离**: 不同项目使用不同工作目录，避免混淆
+- **Token轮换**: 定期更新和轮换Token，保持配置同步
+
+### 错误处理和故障排除
+
+#### 常见问题1: 找不到活跃会话
+```bash
+ctl switch-token
+# 输出：📭 当前没有活跃的CLI会话
+
+# 解决方案：
+# 1. 先启动CLI工具
+ctl use your-provider
+# 2. 选择启动CLI工具
+# 3. 然后再执行Token切换
+```
+
+#### 常见问题2: 工作目录丢失
+```bash
+# 如果重启后目录不对，说明会话信息丢失
+# 解决方案：
+# 1. 使用绝对路径重新启动CLI
+cd /correct/project/path
+ctl use your-provider
+
+# 2. 或者在switch-token时手动指定目录
+# 系统会询问您选择正确的目录
+```
+
+#### 常见问题3: 新窗口没有启动
+```bash
+# 如果自动启动失败，会显示手动操作指导：
+# ⚠️  启动新窗口失败，请手动执行: ctl use your-provider
+
+# 解决方案：
+# 1. 手动打开新终端
+# 2. cd 到正确目录
+# 3. 执行 ctl use your-provider
 ```
 
 ## 环境变量导出

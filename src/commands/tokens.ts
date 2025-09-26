@@ -66,7 +66,7 @@ async function selectProvider(): Promise<string | null> {
     if (!aIsActive && bIsActive) return 1;
 
     // 其他Provider按名称排序
-    return a.name.localeCompare(b.name, 'zh-CN');
+    return a.name.localeCompare(b.name, "zh-CN");
   });
 
   const choices = sortedProviders.map((p) => {
@@ -83,7 +83,7 @@ async function selectProvider(): Promise<string | null> {
 
   // 添加取消选项
   choices.push({
-    name: chalk.red("返回"),
+    name: "返回",
     value: "__cancel__",
   });
 

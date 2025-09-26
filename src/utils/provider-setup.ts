@@ -63,8 +63,9 @@ async function applyEnvironmentVariables(
 
 /**
  * 启动CLI工具
+ * @returns 返回是否成功启动了CLI
  */
-async function launchCliTool(provider: Provider): Promise<void> {
+async function launchCliTool(provider: Provider): Promise<boolean> {
   // 定义可用的CLI工具
   const cliTools = [
     {
@@ -128,17 +129,31 @@ async function launchCliTool(provider: Provider): Promise<void> {
   // 检查是否选择了取消选项
   if (selectedCli === "__cancel__") {
     console.log(chalk.yellow("🚫 已取消启动CLI工具"));
-    return;
+    return false;
   }
 
-  await launchCliByName(selectedCli);
+  await launchCliByName(selectedCli, provider);
+  return true;
 }
 
 /**
  * 按名称启动CLI工具
  */
-async function launchCliByName(cliName: string): Promise<void> {
+async function launchCliByName(
+  cliName: string,
+  provider?: Provider,
+): Promise<void> {
   console.log(chalk.blue(`🚀 正在启动 ${cliName} CLI...`));
+
+  if (provider) {
+    console.log(chalk.gray(`🔍 当前使用Provider: ${provider.name}`));
+    console.log(
+      chalk.gray(
+        `💡 如需切换Token，请在其他终端执行: ctl switch-token --sessions`,
+      ),
+    );
+    console.log(chalk.gray("💡 切换Token后需要重启此CLI才能生效"));
+  }
 
   const child = spawn(cliName, [], {
     stdio: "inherit",
@@ -146,12 +161,16 @@ async function launchCliByName(cliName: string): Promise<void> {
     env: { ...process.env },
   });
 
+  // 注意：会话注册已在ctl use命令中处理，这里不重复注册
+
   child.on("close", (code) => {
     if (code === 0) {
       console.log(chalk.green(`✅ ${cliName} CLI 已正常退出`));
     } else {
       console.log(chalk.yellow(`⚠️  ${cliName} CLI 退出，代码: ${code}`));
     }
+    // CLI退出时，父进程也退出，这样会话记录会被自动清理
+    process.exit(code || 0);
   });
 
   child.on("error", (error) => {
@@ -159,6 +178,8 @@ async function launchCliByName(cliName: string): Promise<void> {
     console.log(
       chalk.blue(`💡 请确保 ${cliName} CLI 已正确安装并在 PATH 中可用`),
     );
+    // 启动失败时退出
+    process.exit(1);
   });
 }
 
@@ -190,7 +211,13 @@ export async function setupProviderEnvironment(
     return;
   }
 
-  // 直接启动CLI工具，不再询问
+  // 启动CLI工具选择
   console.log(); // 添加空行
-  await launchCliTool(provider);
+  const cliStarted = await launchCliTool(provider);
+
+  // 如果用户选择了"返回"，清理会话并退出
+  if (!cliStarted) {
+    console.log(chalk.yellow("🚫 已取消，会话将被清理"));
+    process.exit(0); // 正常退出，会话会被自动清理
+  }
 }

@@ -228,4 +228,25 @@ export class TokenRotationManager {
 
     return provider.tokens.some((t) => this.isTokenAvailable(t));
   }
+
+  // 禁用指定Token
+  static disableToken(provider: Provider, tokenValue: string): boolean {
+    if (!provider.tokens || provider.tokens.length === 0) {
+      // 对于单Token配置，无法禁用
+      return false;
+    }
+
+    const token = provider.tokens.find((t) => t.value === tokenValue);
+    if (!token) {
+      return false;
+    }
+
+    // 禁用Token
+    token.enabled = false;
+
+    // 这里需要保存Provider配置到文件
+    // 但由于我们在TokenRotationManager中，无法直接访问configManager
+    // 所以返回true，让调用方处理保存逻辑
+    return true;
+  }
 }
