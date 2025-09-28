@@ -69,11 +69,52 @@ claude
 qwen
 ```
 
+### 4. 批量导入配置
+
+支持从配置文件批量导入多个 Provider，适合团队共享配置或快速迁移。
+
+```bash
+# 查看导入指南和模板
+ctl add import
+
+# 从JSON文件导入
+ctl add import providers.json
+
+# 从环境变量文件导入
+ctl add import .env.local
+
+# JSON格式示例
+{
+  "providers": [
+    {
+      "name": "Claude API",
+      "token": "sk-xxx-your-token-here",
+      "baseUrl": "https://api.lycheeshare.com",
+      "modelName": "claude-3-5-sonnet-20241022",
+      "description": "Claude API配置"
+    }
+  ]
+}
+
+# ENV格式示例
+ANTHROPIC_API_KEY=sk-xxx-your-token-here
+ANTHROPIC_BASE_URL=https://api.lycheeshare.com
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+**导入特性：**
+- 🔍 **格式自动检测** - 自动识别JSON和ENV格式
+- 🔄 **ID冲突处理** - 自动处理重复ID，确保导入成功
+- ✅ **配置验证** - 导入前验证配置有效性
+- 🎯 **批量选择** - 可选择导入后立即使用的Provider
+- 📋 **交互式指南** - 内置完整的配置文件格式指南
+
 ## 📚 常用命令
 
 | 命令 | 说明 | 示例 |
 |------|------|------|
 | `ctl add` | 交互式添加 Provider，可选择立即使用并启动CLI工具 | `ctl add` |
+| `ctl add import` | 从配置文件批量导入 Providers，支持JSON和ENV格式 | `ctl add import providers.json` |
 | `ctl use <id>` | 选择 Provider，自动设置环境变量，可选择启动CLI工具 | `ctl use my-claude` |
 | `ctl sessions` | 查看当前活跃的CLI会话 | `ctl sessions` |
 | `ctl switch-token` | 智能切换Token，支持多会话管理和自动重启 | `ctl switch-token` |

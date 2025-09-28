@@ -148,9 +148,7 @@ async function launchCliByName(
   if (provider) {
     console.log(chalk.gray(`🔍 当前使用Provider: ${provider.name}`));
     console.log(
-      chalk.gray(
-        `💡 如需切换Token，请在其他终端执行: ctl switch-token`,
-      ),
+      chalk.gray(`💡 如需切换Token，请在其他终端执行: ctl switch-token`),
     );
     console.log(chalk.gray("💡 切换Token后需要重启此CLI才能生效"));
   }

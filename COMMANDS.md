@@ -6,6 +6,13 @@
 
 - [基础命令](#基础命令)
 - [Provider 管理](#provider-管理)
+  - [添加 Provider](#ctl-add---添加-provider)
+  - [从配置文件导入](#从配置文件导入-新功能)
+  - [列出 Providers](#ctl-list--ctl-ls---列出-providers)
+  - [选择 Provider](#ctl-use---选择-provider)
+  - [修改 Provider](#ctl-edit--ctl-update---修改-provider-配置)
+  - [查看当前 Provider](#ctl-current---显示当前-provider)
+  - [删除 Provider](#ctl-remove--ctl-rm---删除-provider)
 - [会话管理](#会话管理)
 - [Token 切换](#token-切换)
 - [Token 管理](#token-管理)
@@ -110,6 +117,190 @@ ctl add --list-templates
    描述: 配置大语言模型 API (支持 Claude、GLM、Qwen 等)
    环境变量: ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL
 ```
+
+#### 从配置文件导入 (新功能)
+```bash
+ctl add import [file]              # 显示导入指南和模板
+ctl add import providers.json      # 从JSON文件导入
+ctl add import .env.local          # 从ENV文件导入
+```
+
+**import 子命令功能详解：**
+
+##### 查看导入指南
+```bash
+ctl add import
+```
+
+**交互示例：**
+```
+📖 Provider 配置文件导入指南
+
+📁 支持的文件格式:
+  • JSON 格式 (.json)
+  • 环境变量格式 (.env)
+
+🚀 使用方法:
+  ctl add import my-providers.json
+  ctl add import .env.local
+  ctl add import ~/configs/api-keys.json
+
+📋 配置字段说明:
+  • name: Provider名称 (必需)
+  • token/apiKey: API密钥 (必需)
+  • baseUrl: API地址 (必需)
+  • modelName: 模型名称 (可选，为空即可)
+  • description: 描述信息 (可选，为空即可)
+  • maxOutputTokens: 最大输出token数 (可选，为空即可)
+
+💡 提示:
+  • 字段与 ctl add 交互式添加完全一致
+  • 可同时导入多个Provider配置
+  • 会自动处理ID冲突
+  • 支持相对路径和绝对路径
+
+选择要查看的模板格式:
+❯ JSON 格式 (.json)
+  环境变量格式 (.env)
+  两种格式都显示
+```
+
+##### JSON格式导入
+支持多种JSON格式：
+
+**格式1：标准格式**
+```json
+{
+  "providers": [
+    {
+      "name": "Claude API",
+      "token": "sk-xxx-your-token-here",
+      "baseUrl": "https://api.lycheeshare.com",
+      "modelName": "claude-3-5-sonnet-20241022",
+      "description": "Claude API配置"
+    },
+    {
+      "name": "Claude Backup",
+      "token": "sk-yyy-backup-token",
+      "baseUrl": "https://api.lycheeshare.com",
+      "maxOutputTokens": 8192
+    }
+  ]
+}
+```
+
+**格式2：直接数组**
+```json
+[
+  {
+    "name": "Claude API",
+    "token": "sk-xxx-your-token-here",
+    "baseUrl": "https://api.lycheeshare.com"
+  }
+]
+```
+
+**格式3：单个配置**
+```json
+{
+  "name": "Claude API",
+  "token": "sk-xxx-your-token-here",
+  "baseUrl": "https://api.lycheeshare.com"
+}
+```
+
+##### ENV格式导入
+自动检测环境变量中的API配置：
+
+```env
+# Claude API 配置
+ANTHROPIC_API_KEY=sk-xxx-your-token-here
+ANTHROPIC_BASE_URL=https://api.lycheeshare.com
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+CLAUDE_CODE_MAX_OUTPUT_TOKENS=8192
+
+# OpenAI API 配置 (可选)
+OPENAI_API_KEY=sk-xxx-openai-token
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4
+
+# 自定义API配置 (可选)
+CUSTOM_API_KEY=your-custom-token
+CUSTOM_BASE_URL=https://your-api.com
+CUSTOM_MODEL=your-model
+```
+
+**ENV格式检测规则：**
+- 检测 `ANTHROPIC_*` 变量自动创建Claude配置
+- 检测 `OPENAI_*` 变量自动创建OpenAI配置
+- 检测 `*_API_KEY` 或 `*_TOKEN` 变量自动创建自定义配置
+- 自动匹配对应的 `*_BASE_URL` 和 `*_MODEL` 变量
+
+##### 导入流程示例
+
+```bash
+ctl add import my-configs.json
+```
+
+**完整交互流程：**
+```
+📁 正在导入配置文件: my-configs.json
+
+✅ 成功解析 2 个Provider配置:
+
+1. Claude API
+   ID: claude-api
+   类型: anthropic
+   Base URL: https://api.lycheeshare.com
+   模型: claude-3-5-sonnet-20241022
+   ✅ 配置验证通过
+
+2. Claude Backup
+   ID: claude-backup
+   类型: anthropic
+   Base URL: https://api.lycheeshare.com
+   ⚠️  ID "claude-backup" 已存在，将生成新的ID
+   🆔 新ID: claude-backup-1
+   ✅ 配置验证通过
+
+确认导入 2 个Provider配置吗? (Y/n) Yes
+
+✅ 成功添加: Claude API (claude-api)
+✅ 成功添加: Claude Backup (claude-backup-1)
+
+🎉 成功导入 2/2 个Provider配置
+
+选择一个Provider作为当前使用的Provider:
+❯ 不选择，保持当前配置
+  Claude API (claude-api)
+  Claude Backup (claude-backup-1)
+```
+
+**导入功能特性：**
+- **智能ID处理**: 自动生成唯一ID，避免冲突
+- **配置验证**: 导入前验证所有配置的有效性
+- **错误处理**: 跳过无效配置，继续导入有效配置
+- **批量操作**: 支持一次导入多个Provider
+- **即时使用**: 导入后可立即选择使用
+- **格式兼容**: 与 `ctl add` 交互式添加字段完全一致
+
+**支持的配置字段：**
+| 字段 | 必需性 | 说明 | 示例 |
+|------|--------|------|------|
+| `name` | 必需 | Provider显示名称 | "Claude API" |
+| `token`/`apiKey` | 必需 | API密钥 | "sk-xxx..." |
+| `baseUrl` | 必需 | API接口地址 | "https://api.lycheeshare.com" |
+| `modelName` | 可选 | 模型名称 | "claude-3-5-sonnet-20241022" |
+| `description` | 可选 | 描述信息 | "主要API配置" |
+| `maxOutputTokens` | 可选 | 最大输出token数 | 8192 |
+| `maxTokens` | 可选 | 最大总token数 | 4096 |
+| `temperature` | 可选 | 温度参数 | 0.7 |
+
+**使用场景：**
+1. **团队配置共享**: 团队成员共享标准化的Provider配置
+2. **环境迁移**: 从开发环境迁移到生产环境
+3. **批量设置**: 一次性设置多个API配置
+4. **配置备份**: 导出现有配置，需要时重新导入
 
 ### `ctl list` / `ctl ls` - 列出 Providers
 

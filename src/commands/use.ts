@@ -130,7 +130,7 @@ async function selectProviderInteractively(providers: any[]): Promise<string> {
 
   // 添加取消选项
   choices.push({
-    name: chalk.red("返回"),
+    name: "返回",
     value: "__cancel__",
   });
 
